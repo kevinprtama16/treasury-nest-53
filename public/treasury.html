@@ -100,8 +100,58 @@
         </button>
       </form>
     </div>
+
+    <!-- Gerbang Admin: lihat daftar akun sebelum masuk dashboard -->
+    <div class="mt-4 text-center">
+      <button id="btnAdminGate" class="text-xs font-semibold text-gold hover:underline">
+        <i class="fa-solid fa-user-shield mr-1"></i> Masuk sebagai Admin (lihat daftar akun)
+      </button>
+    </div>
   </div>
 </div>
+
+<!-- Modal Admin -->
+<div id="adminModal" class="hidden fixed inset-0 z-[55] items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-3xl card rounded-2xl shadow-2xl fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-3 sticky top-0 bg-slate-900/95 backdrop-blur">
+      <h3 class="font-bold text-white"><i class="fa-solid fa-user-shield text-gold mr-1"></i> Panel Admin</h3>
+      <button id="adminClose" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Step 1: kode akses -->
+    <form id="adminCodeForm" class="p-5 space-y-4">
+      <p class="text-sm text-slate-400">Masukkan kode akses admin untuk melihat seluruh akun terdaftar.</p>
+      <input name="code" type="password" required placeholder="Kode akses admin"
+        class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-gold" />
+      <p id="adminErr" class="hidden text-xs text-red-400">Kode akses salah.</p>
+      <button class="w-full rounded-lg bg-gold py-2.5 text-sm font-bold text-navy hover:bg-amber-400">Buka Panel Admin</button>
+    </form>
+
+    <!-- Step 2: daftar akun -->
+    <div id="adminPanel" class="hidden p-5 space-y-5">
+      <div id="adminSummary" class="grid gap-3 sm:grid-cols-3"></div>
+      <div>
+        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Login Terdaftar</h4>
+        <ul id="adminUsers" class="space-y-1.5"></ul>
+      </div>
+      <div>
+        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Treasury</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase text-slate-400 border-b border-slate-700">
+                <th class="py-2 px-2">Nama</th><th class="py-2 px-2">Perangkat</th>
+                <th class="py-2 px-2">Pemakaian</th><th class="py-2 px-2">Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccounts"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- =========================================================
      2. DASHBOARD
@@ -172,6 +222,12 @@
         <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-mobile-screen text-emerald2 mr-1"></i> Distribusi Pemakaian per Perangkat/User</h3>
         <canvas id="chartUsage" height="150"></canvas>
       </div>
+    </section>
+
+    <!-- Laporan Akun: ringkasan limit vs belum limit -->
+    <section class="card rounded-2xl p-4">
+      <h3 class="mb-3 text-sm font-bold text-white"><i class="fa-solid fa-clipboard-list text-gold mr-1"></i> Laporan Akun — Status Limit Bulan Ini</h3>
+      <div id="reportWrap" class="grid gap-3 md:grid-cols-3"></div>
     </section>
 
     <!-- Accounts table -->
@@ -620,11 +676,12 @@ document.getElementById('btnClearLog').onclick = () => {
   logs = []; save(KEY_LOGS, logs); renderLogs();
 };
 
-/* ---------- Statistik ---------- */
+/* ---------- Statistik (nilai pasar bergerak realtime) ---------- */
 const market = {
   gold: 1_385_000,  // IDR / gram
   usd: 16_250,      // USD/IDR
   xau: 2_412,       // XAU/USD
+  goldDelta: 0.8,   // % perubahan terakhir
 };
 function renderStats() {
   const active = accounts.filter(a => statusOf(a) === 'Aktif').length;
@@ -634,32 +691,90 @@ function renderStats() {
   document.getElementById('statUsage').textContent = usage + 'x';
   document.getElementById('statCap').textContent = accounts.length * LIMIT;
   document.getElementById('statGold').textContent = rupiah(market.gold);
-  document.getElementById('statGoldDelta').innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i> +0,8% dari kemarin';
+  const up = (market.goldDelta ?? 0) >= 0;
+  const deltaEl = document.getElementById('statGoldDelta');
+  deltaEl.className = 'mt-1 text-xs ' + (up ? 'text-emerald2' : 'text-red-400');
+  deltaEl.innerHTML = `<i class="fa-solid fa-arrow-trend-${up ? 'up' : 'down'}"></i> ${up ? '+' : ''}${(market.goldDelta ?? 0).toFixed(2).replace('.', ',')}% · live`;
   document.getElementById('statUsd').textContent = rupiah(market.usd);
-  document.getElementById('statXau').textContent = 'XAU/USD $' + market.xau.toLocaleString('en-US');
+  document.getElementById('statXau').textContent = 'XAU/USD $' + Math.round(market.xau).toLocaleString('en-US');
 }
 
-/* ---------- Chart.js ---------- */
+/* ---------- Laporan Akun (limit vs belum limit) ---------- */
+function renderReport() {
+  const wrap = document.getElementById('reportWrap');
+  if (!wrap) return;
+  const groups = [
+    { key: 'Limit Reached', title: 'Sudah Limit (20/20)', icon: 'fa-circle-exclamation', tone: 'text-red-400', ring: 'border-red-500/30 bg-red-500/5' },
+    { key: 'Aktif', title: 'Masih Bisa Dipakai', icon: 'fa-circle-play', tone: 'text-emerald2', ring: 'border-emerald2/30 bg-emerald2/5' },
+    { key: 'Standby Reset', title: 'Belum Dipakai', icon: 'fa-circle-pause', tone: 'text-slate-300', ring: 'border-slate-600/40 bg-slate-500/5' },
+  ];
+  const total = accounts.length || 1;
+  wrap.innerHTML = groups.map(g => {
+    const list = accounts.filter(a => statusOf(a) === g.key);
+    const pct = Math.round((list.length / total) * 100);
+    const items = list.length
+      ? list.map(a => `
+        <li class="flex items-center justify-between gap-2 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
+          <span class="truncate text-sm text-slate-200">${a.name}</span>
+          <span class="shrink-0 font-mono text-xs ${a.usage >= a.limit ? 'text-red-400' : 'text-slate-400'}">${a.usage}/${a.limit}</span>
+        </li>`).join('')
+      : '<li class="text-xs text-slate-500 px-1">Tidak ada akun pada kategori ini.</li>';
+    return `
+      <div class="rounded-xl border p-4 ${g.ring}">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-sm font-bold ${g.tone}"><i class="fa-solid ${g.icon} mr-1"></i> ${g.title}</p>
+          <span class="text-2xl font-extrabold text-white">${list.length}</span>
+        </div>
+        <div class="h-1.5 w-full rounded-full bg-slate-800 mb-3"><div class="h-1.5 rounded-full ${g.key === 'Limit Reached' ? 'bg-red-500' : g.key === 'Aktif' ? 'bg-emerald2' : 'bg-slate-500'}" style="width:${pct}%"></div></div>
+        <ul class="space-y-1.5 max-h-44 overflow-y-auto pr-1">${items}</ul>
+      </div>`;
+  }).join('');
+}
+
+
+/* ---------- Chart.js (REALTIME) ---------- */
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
 Chart.defaults.font.family = 'Inter, sans-serif';
 
 let charts = {};
-const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-/** Bangkitkan deret harga simulasi yang stabil (seeded random sederhana) */
-function series(base, vol, n = 12, seedv = 1) {
-  let s = seedv, out = [], v = base * 0.92;
-  for (let i = 0; i < n; i++) {
-    s = (s * 9301 + 49297) % 233280;
-    v += (s / 233280 - 0.4) * base * vol;
-    out.push(Math.round(v));
-  }
-  return out;
+let tickTimer = null;
+const POINTS = 20;               // jumlah titik yang tampil di grafik realtime
+const TICK_MS = 2000;            // interval update realtime (2 detik)
+
+/** Label jam:menit:detik untuk sumbu X realtime */
+function timeLabel(d = new Date()) {
+  return wib(d, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
+/** Random walk kecil untuk mensimulasikan pergerakan harga live */
+function walk(value, vol) {
+  return value * (1 + (Math.random() - 0.5) * vol);
+}
+
+// Riwayat harga awal (diisi mundur agar grafik langsung terlihat penuh)
+const history = { labels: [], gold: [], usd: [], xau: [] };
+(function seedHistory() {
+  const now = Date.now();
+  let g = market.gold, u = market.usd, x = market.xau;
+  for (let i = POINTS - 1; i >= 0; i--) {
+    g = walk(g, .004); u = walk(u, .003); x = walk(x, .005);
+    history.labels.push(timeLabel(new Date(now - i * TICK_MS)));
+    history.gold.push(Math.round(g));
+    history.usd.push(Math.round(u));
+    history.xau.push(Math.round(x));
+  }
+  market.gold = g; market.usd = u; market.xau = x;
+})();
+
 const commonOpts = {
   responsive: true,
+  animation: { duration: 400 },
+  interaction: { intersect: false, mode: 'index' },
   plugins: { legend: { display: false } },
-  scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(148,163,184,.1)' } } },
+  scales: {
+    x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } },
+    y: { grid: { color: 'rgba(148,163,184,.1)' } },
+  },
 };
 
 function initCharts() {
@@ -668,23 +783,54 @@ function initCharts() {
 
   charts.gold = new Chart(document.getElementById('chartGold'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.gold, .05, 12, 7), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.gold], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   charts.usd = new Chart(document.getElementById('chartUsd'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.usd, .035, 12, 23), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.usd], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   charts.xau = new Chart(document.getElementById('chartXau'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.xau, .06, 12, 41), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: false, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.xau], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   renderUsageChart();
+  startRealtime();
+}
+
+/** Loop realtime: geser 1 titik tiap TICK_MS dan perbarui semua grafik */
+function startRealtime() {
+  clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    if (!session) return;
+    const prevGold = market.gold;
+    market.gold = walk(market.gold, .004);
+    market.usd = walk(market.usd, .003);
+    market.xau = walk(market.xau, .005);
+    market.goldDelta = ((market.gold - prevGold) / prevGold) * 100;
+
+    history.labels.push(timeLabel());
+    history.gold.push(Math.round(market.gold));
+    history.usd.push(Math.round(market.usd));
+    history.xau.push(Math.round(market.xau));
+    ['labels', 'gold', 'usd', 'xau'].forEach(k => { if (history[k].length > POINTS) history[k].shift(); });
+
+    [['gold', 'gold'], ['usd', 'usd'], ['xau', 'xau']].forEach(([c, k]) => {
+      const ch = charts[c];
+      if (!ch) return;
+      ch.data.labels = [...history.labels];
+      ch.data.datasets[0].data = [...history[k]];
+      ch.update('none');
+    });
+
+    renderUsageChart();   // grafik pemakaian ikut realtime
+    renderStats();
+  }, TICK_MS);
 }
 
 function renderUsageChart() {
@@ -697,7 +843,7 @@ function renderUsageChart() {
     charts.usage.data.labels = labels;
     charts.usage.data.datasets[0].data = data;
     charts.usage.data.datasets[0].backgroundColor = colors;
-    charts.usage.update();
+    charts.usage.update('none');
     return;
   }
   charts.usage = new Chart(el, {
@@ -713,12 +859,88 @@ function renderAll() {
   renderTable();
   renderLogs();
   renderUsageChart();
+  renderReport();
 }
+
 
 searchInput.addEventListener('input', renderTable);
 filterStatus.addEventListener('change', renderTable);
 
+/* ============================================================
+ * PANEL ADMIN (sebelum masuk dashboard)
+ * ============================================================ */
+const ADMIN_CODE = 'pojokbusana30';
+const adminModal = document.getElementById('adminModal');
+const adminCodeForm = document.getElementById('adminCodeForm');
+const adminPanel = document.getElementById('adminPanel');
+
+function openAdmin() {
+  adminCodeForm.classList.remove('hidden');
+  adminPanel.classList.add('hidden');
+  document.getElementById('adminErr').classList.add('hidden');
+  adminCodeForm.reset();
+  adminModal.classList.remove('hidden');
+  adminModal.classList.add('flex');
+}
+function closeAdmin() { adminModal.classList.add('hidden'); adminModal.classList.remove('flex'); }
+document.getElementById('btnAdminGate').onclick = openAdmin;
+document.getElementById('adminClose').onclick = closeAdmin;
+adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdmin(); });
+
+adminCodeForm.onsubmit = e => {
+  e.preventDefault();
+  const code = String(new FormData(adminCodeForm).get('code')).trim();
+  if (code !== ADMIN_CODE) {
+    document.getElementById('adminErr').classList.remove('hidden');
+    return;
+  }
+  adminCodeForm.classList.add('hidden');
+  adminPanel.classList.remove('hidden');
+  renderAdmin();
+  addLog('Admin membuka panel daftar akun dengan kode akses.');
+};
+
+/** Tampilkan ringkasan + daftar user login & akun treasury */
+function renderAdmin() {
+  const users = load(KEY_USERS, []);
+  const limitReached = accounts.filter(a => statusOf(a) === 'Limit Reached').length;
+  const belum = accounts.length - limitReached;
+
+  document.getElementById('adminSummary').innerHTML = `
+    <div class="rounded-xl border border-slate-700 bg-navy/60 p-3">
+      <p class="text-xs text-slate-400">Total Akun Treasury</p>
+      <p class="text-2xl font-extrabold text-white">${accounts.length}</p>
+    </div>
+    <div class="rounded-xl border border-red-500/30 bg-red-500/5 p-3">
+      <p class="text-xs text-slate-400">Sudah Limit</p>
+      <p class="text-2xl font-extrabold text-red-400">${limitReached}</p>
+    </div>
+    <div class="rounded-xl border border-emerald2/30 bg-emerald2/5 p-3">
+      <p class="text-xs text-slate-400">Belum Limit</p>
+      <p class="text-2xl font-extrabold text-emerald2">${belum}</p>
+    </div>`;
+
+  document.getElementById('adminUsers').innerHTML = users.length
+    ? users.map(u => `
+      <li class="flex items-center justify-between rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
+        <span class="text-sm text-slate-200">${u.name}</span>
+        <span class="text-xs text-slate-400">${u.email}</span>
+      </li>`).join('')
+    : '<li class="text-xs text-slate-500">Belum ada user terdaftar.</li>';
+
+  document.getElementById('adminAccounts').innerHTML = accounts.map(a => {
+    const s = statusOf(a);
+    return `<tr class="border-b border-slate-800">
+      <td class="py-2 px-2 text-slate-200">${a.name}</td>
+      <td class="py-2 px-2 text-slate-400">${a.device}</td>
+      <td class="py-2 px-2 font-mono ${a.usage >= a.limit ? 'text-red-400' : 'text-slate-300'}">${a.usage}/${a.limit}</td>
+      <td class="py-2 px-2">${statusBadge(s)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" class="py-3 px-2 text-xs text-slate-500">Belum ada akun treasury.</td></tr>';
+}
+
 /* ---------- Start ---------- */
+
 route();
 </script>
 </body>
