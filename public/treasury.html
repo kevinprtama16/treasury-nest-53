@@ -100,8 +100,58 @@
         </button>
       </form>
     </div>
+
+    <!-- Gerbang Admin: lihat daftar akun sebelum masuk dashboard -->
+    <div class="mt-4 text-center">
+      <button id="btnAdminGate" class="text-xs font-semibold text-gold hover:underline">
+        <i class="fa-solid fa-user-shield mr-1"></i> Masuk sebagai Admin (lihat daftar akun)
+      </button>
+    </div>
   </div>
 </div>
+
+<!-- Modal Admin -->
+<div id="adminModal" class="hidden fixed inset-0 z-[55] items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-3xl card rounded-2xl shadow-2xl fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-3 sticky top-0 bg-slate-900/95 backdrop-blur">
+      <h3 class="font-bold text-white"><i class="fa-solid fa-user-shield text-gold mr-1"></i> Panel Admin</h3>
+      <button id="adminClose" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Step 1: kode akses -->
+    <form id="adminCodeForm" class="p-5 space-y-4">
+      <p class="text-sm text-slate-400">Masukkan kode akses admin untuk melihat seluruh akun terdaftar.</p>
+      <input name="code" type="password" required placeholder="Kode akses admin"
+        class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-gold" />
+      <p id="adminErr" class="hidden text-xs text-red-400">Kode akses salah.</p>
+      <button class="w-full rounded-lg bg-gold py-2.5 text-sm font-bold text-navy hover:bg-amber-400">Buka Panel Admin</button>
+    </form>
+
+    <!-- Step 2: daftar akun -->
+    <div id="adminPanel" class="hidden p-5 space-y-5">
+      <div id="adminSummary" class="grid gap-3 sm:grid-cols-3"></div>
+      <div>
+        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Login Terdaftar</h4>
+        <ul id="adminUsers" class="space-y-1.5"></ul>
+      </div>
+      <div>
+        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Treasury</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase text-slate-400 border-b border-slate-700">
+                <th class="py-2 px-2">Nama</th><th class="py-2 px-2">Perangkat</th>
+                <th class="py-2 px-2">Pemakaian</th><th class="py-2 px-2">Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccounts"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- =========================================================
      2. DASHBOARD
