@@ -639,27 +639,49 @@ function renderStats() {
   document.getElementById('statXau').textContent = 'XAU/USD $' + market.xau.toLocaleString('en-US');
 }
 
-/* ---------- Chart.js ---------- */
+/* ---------- Chart.js (REALTIME) ---------- */
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
 Chart.defaults.font.family = 'Inter, sans-serif';
 
 let charts = {};
-const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-/** Bangkitkan deret harga simulasi yang stabil (seeded random sederhana) */
-function series(base, vol, n = 12, seedv = 1) {
-  let s = seedv, out = [], v = base * 0.92;
-  for (let i = 0; i < n; i++) {
-    s = (s * 9301 + 49297) % 233280;
-    v += (s / 233280 - 0.4) * base * vol;
-    out.push(Math.round(v));
-  }
-  return out;
+let tickTimer = null;
+const POINTS = 20;               // jumlah titik yang tampil di grafik realtime
+const TICK_MS = 2000;            // interval update realtime (2 detik)
+
+/** Label jam:menit:detik untuk sumbu X realtime */
+function timeLabel(d = new Date()) {
+  return wib(d, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
+/** Random walk kecil untuk mensimulasikan pergerakan harga live */
+function walk(value, vol) {
+  return value * (1 + (Math.random() - 0.5) * vol);
+}
+
+// Riwayat harga awal (diisi mundur agar grafik langsung terlihat penuh)
+const history = { labels: [], gold: [], usd: [], xau: [] };
+(function seedHistory() {
+  const now = Date.now();
+  let g = market.gold, u = market.usd, x = market.xau;
+  for (let i = POINTS - 1; i >= 0; i--) {
+    g = walk(g, .004); u = walk(u, .003); x = walk(x, .005);
+    history.labels.push(timeLabel(new Date(now - i * TICK_MS)));
+    history.gold.push(Math.round(g));
+    history.usd.push(Math.round(u));
+    history.xau.push(Math.round(x));
+  }
+  market.gold = g; market.usd = u; market.xau = x;
+})();
+
 const commonOpts = {
   responsive: true,
+  animation: { duration: 400 },
+  interaction: { intersect: false, mode: 'index' },
   plugins: { legend: { display: false } },
-  scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(148,163,184,.1)' } } },
+  scales: {
+    x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } },
+    y: { grid: { color: 'rgba(148,163,184,.1)' } },
+  },
 };
 
 function initCharts() {
@@ -668,23 +690,54 @@ function initCharts() {
 
   charts.gold = new Chart(document.getElementById('chartGold'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.gold, .05, 12, 7), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.gold], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   charts.usd = new Chart(document.getElementById('chartUsd'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.usd, .035, 12, 23), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.usd], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   charts.xau = new Chart(document.getElementById('chartXau'), {
     type: 'line',
-    data: { labels: months, datasets: [{ data: series(market.xau, .06, 12, 41), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: false, pointRadius: 2 }] },
+    data: { labels: [...history.labels], datasets: [{ data: [...history.xau], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
     options: commonOpts,
   });
 
   renderUsageChart();
+  startRealtime();
+}
+
+/** Loop realtime: geser 1 titik tiap TICK_MS dan perbarui semua grafik */
+function startRealtime() {
+  clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    if (!session) return;
+    const prevGold = market.gold;
+    market.gold = walk(market.gold, .004);
+    market.usd = walk(market.usd, .003);
+    market.xau = walk(market.xau, .005);
+    market.goldDelta = ((market.gold - prevGold) / prevGold) * 100;
+
+    history.labels.push(timeLabel());
+    history.gold.push(Math.round(market.gold));
+    history.usd.push(Math.round(market.usd));
+    history.xau.push(Math.round(market.xau));
+    ['labels', 'gold', 'usd', 'xau'].forEach(k => { if (history[k].length > POINTS) history[k].shift(); });
+
+    [['gold', 'gold'], ['usd', 'usd'], ['xau', 'xau']].forEach(([c, k]) => {
+      const ch = charts[c];
+      if (!ch) return;
+      ch.data.labels = [...history.labels];
+      ch.data.datasets[0].data = [...history[k]];
+      ch.update('none');
+    });
+
+    renderUsageChart();   // grafik pemakaian ikut realtime
+    renderStats();
+  }, TICK_MS);
 }
 
 function renderUsageChart() {
@@ -697,7 +750,7 @@ function renderUsageChart() {
     charts.usage.data.labels = labels;
     charts.usage.data.datasets[0].data = data;
     charts.usage.data.datasets[0].backgroundColor = colors;
-    charts.usage.update();
+    charts.usage.update('none');
     return;
   }
   charts.usage = new Chart(el, {
@@ -713,7 +766,9 @@ function renderAll() {
   renderTable();
   renderLogs();
   renderUsageChart();
+  renderReport();
 }
+
 
 searchInput.addEventListener('input', renderTable);
 filterStatus.addEventListener('change', renderTable);
