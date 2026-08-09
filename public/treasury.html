@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Treasury Account Management</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: '#0f172a',
+          navy2: '#1e293b',
+          emerald2: '#10b981',
+          gold: '#f59e0b',
+        },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      },
+    },
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  body { background: #0f172a; color: #e2e8f0; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+  .card { background: linear-gradient(160deg, #1e293b 0%, #172033 100%); border: 1px solid #26364d; }
+  .fade-in { animation: fade .35s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px);} to {opacity:1;transform:none;} }
+</style>
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- =========================================================
+     1. AUTH GATE (Login & Register)
+     ========================================================= -->
+<div id="authView" class="hidden min-h-screen items-center justify-center p-4">
+  <div class="w-full max-w-md fade-in">
+    <div class="text-center mb-6">
+      <div class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/15 text-gold text-2xl mb-3">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <h1 class="text-2xl font-extrabold text-white">Treasury Account Management</h1>
+      <p class="text-sm text-slate-400">Kelola akun treasury, limit &amp; pasar keuangan</p>
+    </div>
+
+    <div class="card rounded-2xl p-6 shadow-2xl">
+      <!-- Tabs -->
+      <div class="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1 mb-5">
+        <button id="tabLogin" class="rounded-lg py-2 text-sm font-semibold transition">Login</button>
+        <button id="tabRegister" class="rounded-lg py-2 text-sm font-semibold transition">Daftar Akun Baru</button>
+      </div>
+
+      <div id="authMsg" class="hidden mb-4 rounded-lg px-3 py-2 text-sm"></div>
+
+      <!-- Login form -->
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
+          <input name="email" type="email" required placeholder="anda@email.com"
+            class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Password</label>
+          <input name="password" type="password" required placeholder="••••••••"
+            class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+        <button class="w-full rounded-lg bg-emerald2 py-2.5 text-sm font-bold text-navy hover:bg-emerald-400 transition">
+          <i class="fa-solid fa-right-to-bracket mr-1"></i> Masuk
+        </button>
+        <p class="text-center text-xs text-slate-500">Demo: <span class="text-gold">demo@treasury.id</span> / <span class="text-gold">123456</span></p>
+      </form>
+
+      <!-- Register form -->
+      <form id="registerForm" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Nama Lengkap</label>
+          <input name="name" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
+          <input name="email" type="email" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Password</label>
+            <input name="password" type="password" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Konfirmasi</label>
+            <input name="confirm" type="password" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+          </div>
+        </div>
+        <button class="w-full rounded-lg bg-gold py-2.5 text-sm font-bold text-navy hover:bg-amber-400 transition">
+          <i class="fa-solid fa-user-plus mr-1"></i> Daftar Sekarang
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     2. DASHBOARD
+     ========================================================= -->
+<div id="dashView" class="hidden">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-slate-800 bg-navy/90 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gold/15 text-gold grid place-items-center"><i class="fa-solid fa-vault"></i></div>
+        <div>
+          <h1 class="font-extrabold text-white leading-tight">Treasury Management</h1>
+          <p class="text-xs text-slate-400">Halo, <span id="hdrUser" class="text-emerald2 font-semibold"></span></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <div id="clock" class="font-mono text-lg font-bold text-white"></div>
+          <div id="dateNow" class="text-xs text-slate-400"></div>
+        </div>
+        <button id="btnLogout" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-6 space-y-6">
+    <!-- Stat cards -->
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Akun Treasury Aktif</p>
+        <p id="statActive" class="mt-1 text-3xl font-extrabold text-white">0</p>
+        <p class="mt-1 text-xs text-emerald2"><i class="fa-solid fa-circle-check"></i> dari <span id="statTotal">0</span> total akun</p>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Total Penggunaan Bulan Ini</p>
+        <p id="statUsage" class="mt-1 text-3xl font-extrabold text-gold">0</p>
+        <p class="mt-1 text-xs text-slate-400">dari kapasitas <span id="statCap">0</span> pemakaian</p>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Harga Emas (IDR/gram)</p>
+        <p id="statGold" class="mt-1 text-2xl font-extrabold text-white">-</p>
+        <p id="statGoldDelta" class="mt-1 text-xs text-emerald2"></p>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">USD/IDR &amp; XAU/USD</p>
+        <p id="statUsd" class="mt-1 text-2xl font-extrabold text-white">-</p>
+        <p id="statXau" class="mt-1 text-xs text-gold"></p>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="grid gap-4 lg:grid-cols-2">
+      <div class="card rounded-2xl p-4">
+        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-coins text-gold mr-1"></i> Tren Harga Emas (IDR/gram)</h3>
+        <canvas id="chartGold" height="150"></canvas>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-dollar-sign text-emerald2 mr-1"></i> Kurs USD ke IDR</h3>
+        <canvas id="chartUsd" height="150"></canvas>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-globe text-gold mr-1"></i> XAU/USD (Spot Gold)</h3>
+        <canvas id="chartXau" height="150"></canvas>
+      </div>
+      <div class="card rounded-2xl p-4">
+        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-mobile-screen text-emerald2 mr-1"></i> Distribusi Pemakaian per Perangkat/User</h3>
+        <canvas id="chartUsage" height="150"></canvas>
+      </div>
+    </section>
+
+    <!-- Accounts table -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-table-list text-gold mr-1"></i> Manajemen Akun Treasury</h3>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            <input id="searchInput" placeholder="Cari nama, no HP, atau tipe HP..."
+              class="w-64 rounded-lg bg-navy border border-slate-700 pl-8 pr-3 py-2 text-sm outline-none focus:border-emerald2" />
+          </div>
+          <select id="filterStatus" class="rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2">
+            <option value="">Semua Status</option>
+            <option value="Aktif">Aktif</option>
+            <option value="Limit Reached">Limit Reached</option>
+            <option value="Standby Reset">Standby Reset</option>
+          </select>
+          <button id="btnAdd" class="rounded-lg bg-emerald2 px-3 py-2 text-sm font-bold text-navy hover:bg-emerald-400"><i class="fa-solid fa-plus mr-1"></i> Tambah Akun</button>
+          <button id="btnReset" class="rounded-lg border border-gold/50 text-gold px-3 py-2 text-sm font-bold hover:bg-gold/10"><i class="fa-solid fa-rotate mr-1"></i> Reset Manual</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase text-slate-400 border-b border-slate-700">
+              <th class="py-3 px-2">Akun</th>
+              <th class="py-3 px-2">Kontak</th>
+              <th class="py-3 px-2">Perangkat</th>
+              <th class="py-3 px-2 w-56">Pemakaian Bulan Ini</th>
+              <th class="py-3 px-2">Status</th>
+              <th class="py-3 px-2">Reset Berikutnya</th>
+              <th class="py-3 px-2 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Activity log -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-clock-rotate-left text-gold mr-1"></i> Riwayat Activity Log</h3>
+        <button id="btnClearLog" class="text-xs text-slate-400 hover:text-red-400">Bersihkan Log</button>
+      </div>
+      <ul id="logList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></ul>
+    </section>
+
+    <footer class="pb-8 text-center text-xs text-slate-600">Treasury Account Management &copy; 2026 — Data tersimpan lokal di browser (LocalStorage).</footer>
+  </main>
+</div>
+
+<!-- Modal Form Akun -->
+<div id="modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/60 p-4">
+  <div class="card w-full max-w-lg rounded-2xl p-6 fade-in">
+    <div class="flex items-center justify-between mb-4">
+      <h3 id="modalTitle" class="font-bold text-white">Tambah Akun Baru</h3>
+      <button id="modalClose" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="accountForm" class="space-y-4">
+      <input type="hidden" name="id" />
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1">Nama Akun / Pemilik</label>
+        <input name="name" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
+          <input name="email" type="email" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">No. HP / WhatsApp</label>
+          <input name="phone" required placeholder="0812xxxxxxx" class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1">Jenis / Model Perangkat HP</label>
+        <input name="device" required placeholder="iPhone 15 Pro" class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+      </div>
+      <p class="text-xs text-slate-500">Limit default pemakaian: <span class="text-gold font-semibold">20 kali / bulan</span></p>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" id="modalCancel" class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Batal</button>
+        <button class="rounded-lg bg-emerald2 px-4 py-2 text-sm font-bold text-navy hover:bg-emerald-400">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold shadow-xl"></div>
+
+<script>
+/* ============================================================
+ * TREASURY ACCOUNT MANAGEMENT — Vanilla JS SPA
+ * Semua data disimpan di LocalStorage.
+ * ============================================================ */
+
+/* ---------- Konstanta & Helper ---------- */
+const LIMIT = 20;                       // limit pemakaian per akun per bulan
+const KEY_USERS = 'tam_users';
+const KEY_SESSION = 'tam_session';
+const KEY_ACCOUNTS = 'tam_accounts';
+const KEY_LOGS = 'tam_logs';
+
+const load = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+/** Format tanggal & jam WIB (Asia/Jakarta) */
+function wib(date = new Date(), opts = {}) {
+  return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...opts }).format(date);
+}
+/** Tanggal reset otomatis berikutnya = tanggal 1 bulan depan */
+function nextResetDate() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+}
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'fixed bottom-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold shadow-xl fade-in ' +
+    (type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald2 text-navy');
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 2600);
+}
+
+/* ---------- Seed Data (data awal dummy) ---------- */
+function seed() {
+  if (!load(KEY_USERS, null)) {
+    save(KEY_USERS, [{ id: uid(), name: 'Demo Treasury', email: 'demo@treasury.id', password: '123456' }]);
+  }
+  if (!load(KEY_ACCOUNTS, null)) {
+    const devices = [
+      ['Budi Santoso', 'budi@mail.com', '081234567890', 'iPhone 15 Pro', 12],
+      ['Siti Rahma', 'siti@mail.com', '081298765432', 'Samsung S23 Ultra', 20],
+      ['Andi Wijaya', 'andi@mail.com', '085711223344', 'Xiaomi 13', 4],
+      ['Dewi Lestari', 'dewi@mail.com', '087755667788', 'Oppo Reno 10', 17],
+      ['Rizky Pratama', 'rizky@mail.com', '089912345678', 'Vivo V29', 9],
+      ['Maya Putri', 'maya@mail.com', '081377889900', 'Google Pixel 8', 0],
+    ];
+    save(KEY_ACCOUNTS, devices.map(([name, email, phone, device, usage]) => ({
+      id: uid(), name, email, phone, device, usage, limit: LIMIT, createdAt: Date.now(),
+    })));
+  }
+  if (!load(KEY_LOGS, null)) {
+    save(KEY_LOGS, [{ id: uid(), text: 'Sistem diinisialisasi dengan data awal treasury.', at: Date.now() }]);
+  }
+}
+seed();
+
+/* ---------- State ---------- */
+let accounts = load(KEY_ACCOUNTS, []);
+let logs = load(KEY_LOGS, []);
+let session = load(KEY_SESSION, null);
+
+function addLog(text) {
+  logs.unshift({ id: uid(), text, at: Date.now() });
+  logs = logs.slice(0, 100);
+  save(KEY_LOGS, logs);
+  renderLogs();
+}
+
+/* ============================================================
+ * AUTENTIKASI
+ * ============================================================ */
+const authView = document.getElementById('authView');
+const dashView = document.getElementById('dashView');
+const authMsg = document.getElementById('authMsg');
+const tabLogin = document.getElementById('tabLogin');
+const tabRegister = document.getElementById('tabRegister');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+
+function setTab(which) {
+  const on = 'bg-emerald2 text-navy', off = 'text-slate-400 hover:text-white';
+  tabLogin.className = 'rounded-lg py-2 text-sm font-semibold transition ' + (which === 'login' ? on : off);
+  tabRegister.className = 'rounded-lg py-2 text-sm font-semibold transition ' + (which === 'register' ? on : off);
+  loginForm.classList.toggle('hidden', which !== 'login');
+  registerForm.classList.toggle('hidden', which !== 'register');
+  authMsg.classList.add('hidden');
+}
+tabLogin.onclick = () => setTab('login');
+tabRegister.onclick = () => setTab('register');
+
+function showAuthMsg(text, type = 'error') {
+  authMsg.textContent = text;
+  authMsg.className = 'mb-4 rounded-lg px-3 py-2 text-sm ' +
+    (type === 'error' ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                      : 'bg-emerald2/15 text-emerald2 border border-emerald2/30');
+}
+
+loginForm.onsubmit = e => {
+  e.preventDefault();
+  const f = new FormData(loginForm);
+  const users = load(KEY_USERS, []);
+  const user = users.find(u => u.email.toLowerCase() === String(f.get('email')).toLowerCase().trim());
+  if (!user) return showAuthMsg('Email belum terdaftar. Silakan daftar akun baru.');
+  if (user.password !== f.get('password')) return showAuthMsg('Password salah. Coba lagi.');
+  session = { id: user.id, name: user.name, email: user.email };
+  save(KEY_SESSION, session);
+  addLog(`${user.name} berhasil login ke dashboard.`);
+  loginForm.reset();
+  route();
+};
+
+registerForm.onsubmit = e => {
+  e.preventDefault();
+  const f = new FormData(registerForm);
+  const email = String(f.get('email')).toLowerCase().trim();
+  if (String(f.get('password')).length < 6) return showAuthMsg('Password minimal 6 karakter.');
+  if (f.get('password') !== f.get('confirm')) return showAuthMsg('Konfirmasi password tidak cocok.');
+  const users = load(KEY_USERS, []);
+  if (users.some(u => u.email.toLowerCase() === email)) return showAuthMsg('Email sudah terdaftar. Silakan login.');
+  users.push({ id: uid(), name: f.get('name'), email, password: f.get('password') });
+  save(KEY_USERS, users);
+  registerForm.reset();
+  setTab('login');
+  showAuthMsg('Registrasi berhasil! Silakan login dengan akun Anda.', 'success');
+};
+
+document.getElementById('btnLogout').onclick = () => {
+  addLog(`${session?.name || 'Pengguna'} logout dari sistem.`);
+  session = null;
+  localStorage.removeItem(KEY_SESSION);
+  route();
+};
+
+/* ---------- Router sederhana ---------- */
+function route() {
+  const logged = !!session;
+  authView.classList.toggle('hidden', logged);
+  authView.classList.toggle('flex', !logged);
+  dashView.classList.toggle('hidden', !logged);
+  if (logged) {
+    document.getElementById('hdrUser').textContent = session.name;
+    renderAll();
+    initCharts();
+  } else {
+    setTab('login');
+  }
+}
+
+/* ============================================================
+ * JAM REAL-TIME (WIB)
+ * ============================================================ */
+setInterval(() => {
+  const now = new Date();
+  const c = document.getElementById('clock');
+  if (!c) return;
+  c.textContent = wib(now, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WIB';
+  document.getElementById('dateNow').textContent =
+    wib(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}, 1000);
+
+/* ============================================================
+ * LOGIKA AKUN TREASURY
+ * ============================================================ */
+function statusOf(a) {
+  if (a.usage >= a.limit) return 'Limit Reached';
+  if (a.usage === 0) return 'Standby Reset';
+  return 'Aktif';
+}
+function barColor(pct) {
+  if (pct > 80) return 'bg-red-500';
+  if (pct >= 50) return 'bg-gold';
+  return 'bg-emerald2';
+}
+function statusBadge(s) {
+  const map = {
+    'Aktif': 'bg-emerald2/15 text-emerald2 border-emerald2/30',
+    'Limit Reached': 'bg-red-500/15 text-red-400 border-red-500/30',
+    'Standby Reset': 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  };
+  return `<span class="inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${map[s]}">${s}</span>`;
+}
+
+function persist() { save(KEY_ACCOUNTS, accounts); }
+
+/* ---------- Render tabel ---------- */
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('searchInput');
+const filterStatus = document.getElementById('filterStatus');
+
+function filtered() {
+  const q = searchInput.value.toLowerCase().trim();
+  const st = filterStatus.value;
+  return accounts.filter(a => {
+    const match = !q || [a.name, a.phone, a.device, a.email].some(v => v.toLowerCase().includes(q));
+    return match && (!st || statusOf(a) === st);
+  });
+}
+
+function renderTable() {
+  const rows = filtered();
+  const reset = wib(nextResetDate(), { day: 'numeric', month: 'short', year: 'numeric' });
+  if (!rows.length) {
+    tableBody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-500">Tidak ada akun yang cocok dengan pencarian.</td></tr>`;
+    return;
+  }
+  tableBody.innerHTML = rows.map(a => {
+    const pct = Math.round((a.usage / a.limit) * 100);
+    const st = statusOf(a);
+    const full = a.usage >= a.limit;
+    return `
+    <tr class="border-b border-slate-800/70 hover:bg-slate-800/30">
+      <td class="py-3 px-2">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-lg bg-gold/15 text-gold grid place-items-center text-xs font-bold">${a.name.charAt(0).toUpperCase()}</div>
+          <div><div class="font-semibold text-white">${a.name}</div><div class="text-xs text-slate-500">ID: ${a.id}</div></div>
+        </div>
+      </td>
+      <td class="py-3 px-2 text-xs text-slate-300">
+        <div><i class="fa-regular fa-envelope text-slate-500 mr-1"></i>${a.email}</div>
+        <div><i class="fa-brands fa-whatsapp text-emerald2 mr-1"></i>${a.phone}</div>
+      </td>
+      <td class="py-3 px-2 text-slate-300"><i class="fa-solid fa-mobile-screen-button text-slate-500 mr-1"></i>${a.device}</td>
+      <td class="py-3 px-2">
+        <div class="flex items-center justify-between text-xs mb-1"><span class="font-semibold text-white">${a.usage}/${a.limit}</span><span class="text-slate-400">${pct}%</span></div>
+        <div class="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
+          <div class="h-full ${barColor(pct)} transition-all" style="width:${pct}%"></div>
+        </div>
+      </td>
+      <td class="py-3 px-2">${statusBadge(st)}</td>
+      <td class="py-3 px-2 text-xs text-slate-400"><i class="fa-regular fa-calendar mr-1"></i>${reset}</td>
+      <td class="py-3 px-2">
+        <div class="flex justify-end gap-1.5">
+          <button data-use="${a.id}" ${full ? 'disabled' : ''}
+            class="rounded-lg px-2.5 py-1.5 text-xs font-bold ${full ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-emerald2 text-navy hover:bg-emerald-400'}">
+            ${full ? 'Limit Reached' : '+1 Gunakan'}
+          </button>
+          <button data-edit="${a.id}" class="rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-700"><i class="fa-solid fa-pen"></i></button>
+          <button data-del="${a.id}" class="rounded-lg border border-red-500/40 px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-500/10"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- Delegasi klik aksi tabel ---------- */
+tableBody.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const { use, edit, del } = btn.dataset;
+  if (use) return useAccount(use);
+  if (edit) return openModal(edit);
+  if (del) return deleteAccount(del);
+});
+
+function useAccount(id) {
+  const a = accounts.find(x => x.id === id);
+  if (!a || a.usage >= a.limit) return;
+  a.usage++;
+  persist();
+  addLog(`Akun ${a.name} (${a.device}) digunakan pada ${wib(new Date(), { day: '2-digit', month: 'short', year: 'numeric' })}, ${wib(new Date(), { hour: '2-digit', minute: '2-digit', hour12: false })} WIB. (${a.usage}/${a.limit})`);
+  renderAll();
+  toast(a.usage >= a.limit ? `${a.name} mencapai limit bulanan!` : `Pemakaian ${a.name}: ${a.usage}/${a.limit}`, a.usage >= a.limit ? 'error' : 'success');
+}
+
+function deleteAccount(id) {
+  const a = accounts.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm(`Hapus akun "${a.name}" (${a.device})? Tindakan ini tidak dapat dibatalkan.`)) return;
+  accounts = accounts.filter(x => x.id !== id);
+  persist();
+  addLog(`Akun ${a.name} dihapus dari sistem treasury.`);
+  renderAll();
+  toast('Akun berhasil dihapus.');
+}
+
+/* ---------- Modal Tambah / Edit ---------- */
+const modal = document.getElementById('modal');
+const accountForm = document.getElementById('accountForm');
+const modalTitle = document.getElementById('modalTitle');
+
+function openModal(id) {
+  accountForm.reset();
+  if (id) {
+    const a = accounts.find(x => x.id === id);
+    modalTitle.textContent = 'Edit Akun Treasury';
+    accountForm.id.value = a.id;
+    accountForm.name.value = a.name;
+    accountForm.email.value = a.email;
+    accountForm.phone.value = a.phone;
+    accountForm.device.value = a.device;
+  } else {
+    modalTitle.textContent = 'Tambah Akun Baru';
+    accountForm.id.value = '';
+  }
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+document.getElementById('btnAdd').onclick = () => openModal();
+document.getElementById('modalClose').onclick = closeModal;
+document.getElementById('modalCancel').onclick = closeModal;
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+accountForm.onsubmit = e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(accountForm));
+  if (f.id) {
+    const a = accounts.find(x => x.id === f.id);
+    Object.assign(a, { name: f.name, email: f.email, phone: f.phone, device: f.device });
+    addLog(`Data akun ${a.name} diperbarui (perangkat: ${a.device}).`);
+    toast('Perubahan akun tersimpan.');
+  } else {
+    accounts.push({ id: uid(), name: f.name, email: f.email, phone: f.phone, device: f.device, usage: 0, limit: LIMIT, createdAt: Date.now() });
+    addLog(`Akun baru ${f.name} (${f.device}) ditambahkan dengan limit ${LIMIT}x/bulan.`);
+    toast('Akun baru berhasil ditambahkan.');
+  }
+  persist();
+  closeModal();
+  renderAll();
+};
+
+/* ---------- Reset manual bulanan ---------- */
+document.getElementById('btnReset').onclick = () => {
+  if (!confirm('Reset hitungan pemakaian SEMUA akun menjadi 0? (simulasi reset bulanan)')) return;
+  accounts.forEach(a => a.usage = 0);
+  persist();
+  addLog('Reset manual dijalankan: seluruh counter pemakaian dikembalikan ke 0.');
+  renderAll();
+  toast('Semua counter pemakaian telah direset.');
+};
+
+/* ---------- Activity log ---------- */
+function renderLogs() {
+  const list = document.getElementById('logList');
+  if (!list) return;
+  if (!logs.length) { list.innerHTML = '<li class="text-sm text-slate-500">Belum ada aktivitas.</li>'; return; }
+  list.innerHTML = logs.map(l => `
+    <li class="flex gap-3 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
+      <i class="fa-solid fa-circle-dot text-gold text-[10px] mt-1.5"></i>
+      <div>
+        <p class="text-sm text-slate-200">${l.text}</p>
+        <p class="text-xs text-slate-500">${wib(new Date(l.at), { day: '2-digit', month: 'short', year: 'numeric' })}, ${wib(new Date(l.at), { hour: '2-digit', minute: '2-digit', hour12: false })} WIB</p>
+      </div>
+    </li>`).join('');
+}
+document.getElementById('btnClearLog').onclick = () => {
+  if (!confirm('Bersihkan seluruh riwayat aktivitas?')) return;
+  logs = []; save(KEY_LOGS, logs); renderLogs();
+};
+
+/* ---------- Statistik ---------- */
+const market = {
+  gold: 1_385_000,  // IDR / gram
+  usd: 16_250,      // USD/IDR
+  xau: 2_412,       // XAU/USD
+};
+function renderStats() {
+  const active = accounts.filter(a => statusOf(a) === 'Aktif').length;
+  const usage = accounts.reduce((s, a) => s + a.usage, 0);
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statTotal').textContent = accounts.length;
+  document.getElementById('statUsage').textContent = usage + 'x';
+  document.getElementById('statCap').textContent = accounts.length * LIMIT;
+  document.getElementById('statGold').textContent = rupiah(market.gold);
+  document.getElementById('statGoldDelta').innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i> +0,8% dari kemarin';
+  document.getElementById('statUsd').textContent = rupiah(market.usd);
+  document.getElementById('statXau').textContent = 'XAU/USD $' + market.xau.toLocaleString('en-US');
+}
+
+/* ---------- Chart.js ---------- */
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
+Chart.defaults.font.family = 'Inter, sans-serif';
+
+let charts = {};
+const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+/** Bangkitkan deret harga simulasi yang stabil (seeded random sederhana) */
+function series(base, vol, n = 12, seedv = 1) {
+  let s = seedv, out = [], v = base * 0.92;
+  for (let i = 0; i < n; i++) {
+    s = (s * 9301 + 49297) % 233280;
+    v += (s / 233280 - 0.4) * base * vol;
+    out.push(Math.round(v));
+  }
+  return out;
+}
+const commonOpts = {
+  responsive: true,
+  plugins: { legend: { display: false } },
+  scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(148,163,184,.1)' } } },
+};
+
+function initCharts() {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  charts.gold = new Chart(document.getElementById('chartGold'), {
+    type: 'line',
+    data: { labels: months, datasets: [{ data: series(market.gold, .05, 12, 7), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 2 }] },
+    options: commonOpts,
+  });
+
+  charts.usd = new Chart(document.getElementById('chartUsd'), {
+    type: 'line',
+    data: { labels: months, datasets: [{ data: series(market.usd, .035, 12, 23), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 2 }] },
+    options: commonOpts,
+  });
+
+  charts.xau = new Chart(document.getElementById('chartXau'), {
+    type: 'line',
+    data: { labels: months, datasets: [{ data: series(market.xau, .06, 12, 41), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: false, pointRadius: 2 }] },
+    options: commonOpts,
+  });
+
+  renderUsageChart();
+}
+
+function renderUsageChart() {
+  const el = document.getElementById('chartUsage');
+  if (!el) return;
+  const labels = accounts.map(a => `${a.name.split(' ')[0]} · ${a.device}`);
+  const data = accounts.map(a => a.usage);
+  const colors = data.map(v => v / LIMIT > .8 ? '#ef4444' : v / LIMIT >= .5 ? '#f59e0b' : '#10b981');
+  if (charts.usage) {
+    charts.usage.data.labels = labels;
+    charts.usage.data.datasets[0].data = data;
+    charts.usage.data.datasets[0].backgroundColor = colors;
+    charts.usage.update();
+    return;
+  }
+  charts.usage = new Chart(el, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, maxBarThickness: 36 }] },
+    options: { ...commonOpts, scales: { ...commonOpts.scales, y: { beginAtZero: true, suggestedMax: LIMIT, grid: { color: 'rgba(148,163,184,.1)' } } } },
+  });
+}
+
+/* ---------- Render agregat ---------- */
+function renderAll() {
+  renderStats();
+  renderTable();
+  renderLogs();
+  renderUsageChart();
+}
+
+searchInput.addEventListener('input', renderTable);
+filterStatus.addEventListener('change', renderTable);
+
+/* ---------- Start ---------- */
+route();
+</script>
+</body>
+</html>
