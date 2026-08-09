@@ -620,11 +620,12 @@ document.getElementById('btnClearLog').onclick = () => {
   logs = []; save(KEY_LOGS, logs); renderLogs();
 };
 
-/* ---------- Statistik ---------- */
+/* ---------- Statistik (nilai pasar bergerak realtime) ---------- */
 const market = {
   gold: 1_385_000,  // IDR / gram
   usd: 16_250,      // USD/IDR
   xau: 2_412,       // XAU/USD
+  goldDelta: 0.8,   // % perubahan terakhir
 };
 function renderStats() {
   const active = accounts.filter(a => statusOf(a) === 'Aktif').length;
@@ -634,10 +635,46 @@ function renderStats() {
   document.getElementById('statUsage').textContent = usage + 'x';
   document.getElementById('statCap').textContent = accounts.length * LIMIT;
   document.getElementById('statGold').textContent = rupiah(market.gold);
-  document.getElementById('statGoldDelta').innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i> +0,8% dari kemarin';
+  const up = (market.goldDelta ?? 0) >= 0;
+  const deltaEl = document.getElementById('statGoldDelta');
+  deltaEl.className = 'mt-1 text-xs ' + (up ? 'text-emerald2' : 'text-red-400');
+  deltaEl.innerHTML = `<i class="fa-solid fa-arrow-trend-${up ? 'up' : 'down'}"></i> ${up ? '+' : ''}${(market.goldDelta ?? 0).toFixed(2).replace('.', ',')}% · live`;
   document.getElementById('statUsd').textContent = rupiah(market.usd);
-  document.getElementById('statXau').textContent = 'XAU/USD $' + market.xau.toLocaleString('en-US');
+  document.getElementById('statXau').textContent = 'XAU/USD $' + Math.round(market.xau).toLocaleString('en-US');
 }
+
+/* ---------- Laporan Akun (limit vs belum limit) ---------- */
+function renderReport() {
+  const wrap = document.getElementById('reportWrap');
+  if (!wrap) return;
+  const groups = [
+    { key: 'Limit Reached', title: 'Sudah Limit (20/20)', icon: 'fa-circle-exclamation', tone: 'text-red-400', ring: 'border-red-500/30 bg-red-500/5' },
+    { key: 'Aktif', title: 'Masih Bisa Dipakai', icon: 'fa-circle-play', tone: 'text-emerald2', ring: 'border-emerald2/30 bg-emerald2/5' },
+    { key: 'Standby Reset', title: 'Belum Dipakai', icon: 'fa-circle-pause', tone: 'text-slate-300', ring: 'border-slate-600/40 bg-slate-500/5' },
+  ];
+  const total = accounts.length || 1;
+  wrap.innerHTML = groups.map(g => {
+    const list = accounts.filter(a => statusOf(a) === g.key);
+    const pct = Math.round((list.length / total) * 100);
+    const items = list.length
+      ? list.map(a => `
+        <li class="flex items-center justify-between gap-2 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
+          <span class="truncate text-sm text-slate-200">${a.name}</span>
+          <span class="shrink-0 font-mono text-xs ${a.usage >= a.limit ? 'text-red-400' : 'text-slate-400'}">${a.usage}/${a.limit}</span>
+        </li>`).join('')
+      : '<li class="text-xs text-slate-500 px-1">Tidak ada akun pada kategori ini.</li>';
+    return `
+      <div class="rounded-xl border p-4 ${g.ring}">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-sm font-bold ${g.tone}"><i class="fa-solid ${g.icon} mr-1"></i> ${g.title}</p>
+          <span class="text-2xl font-extrabold text-white">${list.length}</span>
+        </div>
+        <div class="h-1.5 w-full rounded-full bg-slate-800 mb-3"><div class="h-1.5 rounded-full ${g.key === 'Limit Reached' ? 'bg-red-500' : g.key === 'Aktif' ? 'bg-emerald2' : 'bg-slate-500'}" style="width:${pct}%"></div></div>
+        <ul class="space-y-1.5 max-h-44 overflow-y-auto pr-1">${items}</ul>
+      </div>`;
+  }).join('');
+}
+
 
 /* ---------- Chart.js (REALTIME) ---------- */
 Chart.defaults.color = '#94a3b8';
