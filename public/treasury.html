@@ -1,1050 +1,391 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Treasury Account Management</title>
+<title>Treasury — Dashboard Emas & Kalender Ekonomi</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          navy: '#0f172a',
-          navy2: '#1e293b',
-          emerald2: '#10b981',
-          gold: '#f59e0b',
-        },
-        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-      },
-    },
-  };
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } },
+  };
+</script>
 <style>
-  body { background: #0f172a; color: #e2e8f0; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
-  .card { background: linear-gradient(160deg, #1e293b 0%, #172033 100%); border: 1px solid #26364d; }
-  .fade-in { animation: fade .35s ease both; }
-  @keyframes fade { from { opacity: 0; transform: translateY(8px);} to {opacity:1;transform:none;} }
+  body { font-family: Inter, system-ui, sans-serif; }
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+  .dark ::-webkit-scrollbar-thumb { background: #334155; }
+  .tnum { font-variant-numeric: tabular-nums; }
 </style>
 </head>
-<body class="font-sans min-h-screen">
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 min-h-screen">
 
-<!-- =========================================================
-     1. AUTH GATE (Login & Register)
-     ========================================================= -->
-<div id="authView" class="hidden min-h-screen items-center justify-center p-4">
-  <div class="w-full max-w-md fade-in">
-    <div class="text-center mb-6">
-      <div class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/15 text-gold text-2xl mb-3">
-        <i class="fa-solid fa-vault"></i>
-      </div>
-      <h1 class="text-2xl font-extrabold text-white">Treasury Account Management</h1>
-      <p class="text-sm text-slate-400">Kelola akun treasury, limit &amp; pasar keuangan</p>
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+  <div class="mx-auto flex max-w-[1500px] items-center gap-3 px-4 py-2.5">
+    <div class="flex items-center gap-2">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15">
+        <i class="fa-solid fa-coins text-sm"></i>
+      </span>
+      <span class="text-lg font-extrabold tracking-tight">Treasury</span>
     </div>
 
-    <div class="card rounded-2xl p-6 shadow-2xl">
-      <!-- Tabs -->
-      <div class="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1 mb-5">
-        <button id="tabLogin" class="rounded-lg py-2 text-sm font-semibold transition">Login</button>
-        <button id="tabRegister" class="rounded-lg py-2 text-sm font-semibold transition">Daftar Akun Baru</button>
-      </div>
+    <div class="ml-auto flex items-center gap-1.5">
+      <a href="https://t.me" target="_blank" rel="noopener" title="Telegram"
+        class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sky-500 hover:bg-sky-50 dark:border-slate-700 dark:hover:bg-slate-800"><i class="fa-brands fa-telegram"></i></a>
+      <a href="https://wa.me" target="_blank" rel="noopener" title="WhatsApp"
+        class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-emerald-500 hover:bg-emerald-50 dark:border-slate-700 dark:hover:bg-slate-800"><i class="fa-brands fa-whatsapp"></i></a>
+      <button id="btnGift" title="Promo"
+        class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-rose-500 hover:bg-rose-50 dark:border-slate-700 dark:hover:bg-slate-800"><i class="fa-solid fa-gift"></i></button>
+      <button id="btnTheme" title="Mode gelap/terang"
+        class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-amber-300 dark:hover:bg-slate-800"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
+      <button id="btnStatus"
+        class="ml-1 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">ON</button>
+    </div>
+  </div>
+</header>
 
-      <div id="authMsg" class="hidden mb-4 rounded-lg px-3 py-2 text-sm"></div>
+<!-- ================= TOOLBAR ================= -->
+<div class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+  <div class="mx-auto max-w-[1500px] space-y-2 px-4 py-2.5">
+    <div class="flex flex-wrap items-center gap-2">
+      <select id="preset" class="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      </select>
+      <button id="btnPin" title="Pin" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"><i class="fa-solid fa-thumbtack text-xs"></i></button>
+      <button id="btnLock" title="Kunci" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"><i class="fa-solid fa-lock-open text-xs"></i></button>
 
-      <!-- Login form -->
-      <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
-          <input name="email" type="email" required placeholder="anda@email.com"
-            class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Password</label>
-          <input name="password" type="password" required placeholder="••••••••"
-            class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-        </div>
-        <button class="w-full rounded-lg bg-emerald2 py-2.5 text-sm font-bold text-navy hover:bg-emerald-400 transition">
-          <i class="fa-solid fa-right-to-bracket mr-1"></i> Masuk
-        </button>
-        <p class="text-center text-xs text-slate-500">Demo: <span class="text-gold">demo@treasury.id</span> / <span class="text-gold">123456</span></p>
-      </form>
+      <span class="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700"></span>
 
-      <!-- Register form -->
-      <form id="registerForm" class="space-y-4 hidden">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Nama Lengkap</label>
-          <input name="name" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
-          <input name="email" type="email" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Password</label>
-            <input name="password" type="password" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Konfirmasi</label>
-            <input name="confirm" type="password" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-          </div>
-        </div>
-        <button class="w-full rounded-lg bg-gold py-2.5 text-sm font-bold text-navy hover:bg-amber-400 transition">
-          <i class="fa-solid fa-user-plus mr-1"></i> Daftar Sekarang
-        </button>
-      </form>
+      <div id="quickBadges" class="flex items-center gap-1.5"></div>
+
+      <input id="miniSearch" placeholder="Cari..."
+        class="w-32 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800" />
+
+      <span id="limitBadge" class="ml-auto rounded-md bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
+        Limit Bulan Ini: 88888
+      </span>
     </div>
 
-    <!-- Gerbang Admin: lihat daftar akun sebelum masuk dashboard -->
-    <div class="mt-4 text-center">
-      <button id="btnAdminGate" class="text-xs font-semibold text-gold hover:underline">
-        <i class="fa-solid fa-user-shield mr-1"></i> Masuk sebagai Admin (lihat daftar akun)
-      </button>
-    </div>
+    <div id="cuanRow" class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs tnum text-slate-600 dark:text-slate-400"></div>
   </div>
 </div>
 
-<!-- Modal Admin -->
-<div id="adminModal" class="hidden fixed inset-0 z-[55] items-center justify-center bg-black/70 p-4">
-  <div class="w-full max-w-3xl card rounded-2xl shadow-2xl fade-in max-h-[90vh] overflow-y-auto">
-    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-3 sticky top-0 bg-slate-900/95 backdrop-blur">
-      <h3 class="font-bold text-white"><i class="fa-solid fa-user-shield text-gold mr-1"></i> Panel Admin</h3>
-      <button id="adminClose" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+<!-- ================= MAIN ================= -->
+<main class="mx-auto grid max-w-[1500px] gap-4 px-4 py-4 lg:grid-cols-10">
+  <!-- LEFT -->
+  <div class="space-y-4 lg:col-span-7">
 
-    <!-- Step 1: kode akses -->
-    <form id="adminCodeForm" class="p-5 space-y-4">
-      <p class="text-sm text-slate-400">Masukkan kode akses admin untuk melihat seluruh akun terdaftar.</p>
-      <input name="code" type="password" required placeholder="Kode akses admin"
-        class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-gold" />
-      <p id="adminErr" class="hidden text-xs text-red-400">Kode akses salah.</p>
-      <button class="w-full rounded-lg bg-gold py-2.5 text-sm font-bold text-navy hover:bg-amber-400">Buka Panel Admin</button>
-    </form>
-
-    <!-- Step 2: daftar akun -->
-    <div id="adminPanel" class="hidden p-5 space-y-5">
-      <div id="adminSummary" class="grid gap-3 sm:grid-cols-3"></div>
-      <div>
-        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Login Terdaftar</h4>
-        <ul id="adminUsers" class="space-y-1.5"></ul>
+    <!-- Grafik utama XAU -->
+    <section class="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
+        <h2 class="text-sm font-bold">XAU / USD <span class="text-xs font-medium text-slate-400">· FOREXCOM</span></h2>
+        <span id="xauPrice" class="tnum text-sm font-bold text-emerald-600 dark:text-emerald-400">$0</span>
+        <span id="xauChg" class="tnum rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">0.00%</span>
+        <label class="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+          <input id="spreadToggle" type="checkbox" class="accent-blue-600" /> Spread
+        </label>
       </div>
-      <div>
-        <h4 class="mb-2 text-xs font-bold uppercase text-slate-400">Akun Treasury</h4>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-xs uppercase text-slate-400 border-b border-slate-700">
-                <th class="py-2 px-2">Nama</th><th class="py-2 px-2">Perangkat</th>
-                <th class="py-2 px-2">Pemakaian</th><th class="py-2 px-2">Status</th>
-              </tr>
-            </thead>
-            <tbody id="adminAccounts"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- =========================================================
-     2. DASHBOARD
-     ========================================================= -->
-<div id="dashView" class="hidden">
-  <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-slate-800 bg-navy/90 backdrop-blur">
-    <div class="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-gold/15 text-gold grid place-items-center"><i class="fa-solid fa-vault"></i></div>
-        <div>
-          <h1 class="font-extrabold text-white leading-tight">Treasury Management</h1>
-          <p class="text-xs text-slate-400">Halo, <span id="hdrUser" class="text-emerald2 font-semibold"></span></p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="text-right hidden sm:block">
-          <div id="clock" class="font-mono text-lg font-bold text-white"></div>
-          <div id="dateNow" class="text-xs text-slate-400"></div>
-        </div>
-        <button id="btnLogout" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">
-          <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Logout
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="mx-auto max-w-7xl px-4 py-6 space-y-6">
-    <!-- Stat cards -->
-    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="card rounded-2xl p-4">
-        <p class="text-xs text-slate-400">Akun Treasury Aktif</p>
-        <p id="statActive" class="mt-1 text-3xl font-extrabold text-white">0</p>
-        <p class="mt-1 text-xs text-emerald2"><i class="fa-solid fa-circle-check"></i> dari <span id="statTotal">0</span> total akun</p>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <p class="text-xs text-slate-400">Total Penggunaan Bulan Ini</p>
-        <p id="statUsage" class="mt-1 text-3xl font-extrabold text-gold">0</p>
-        <p class="mt-1 text-xs text-slate-400">dari kapasitas <span id="statCap">0</span> pemakaian</p>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <p class="text-xs text-slate-400">Harga Emas (IDR/gram)</p>
-        <p id="statGold" class="mt-1 text-2xl font-extrabold text-white">-</p>
-        <p id="statGoldDelta" class="mt-1 text-xs text-emerald2"></p>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <p class="text-xs text-slate-400">USD/IDR &amp; XAU/USD</p>
-        <p id="statUsd" class="mt-1 text-2xl font-extrabold text-white">-</p>
-        <p id="statXau" class="mt-1 text-xs text-gold"></p>
-      </div>
+      <div class="p-3"><div class="h-[260px]"><canvas id="chartXau"></canvas></div></div>
     </section>
 
-    <!-- Modal & Untung -->
-    <section class="card rounded-2xl p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-sack-dollar text-gold mr-1"></i> Modal &amp; Keuntungan</h3>
-        <form id="finForm" class="flex flex-wrap items-center gap-2">
-          <select name="type" class="rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2">
-            <option value="modal">Modal Keluar</option>
-            <option value="income">Pemasukan</option>
-          </select>
-          <input name="note" placeholder="Keterangan" class="w-44 rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2" />
-          <input name="amount" type="number" min="0" step="1000" required placeholder="Nominal (Rp)"
-            class="w-40 rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2" />
-          <button class="rounded-lg bg-emerald2 px-3 py-2 text-sm font-bold text-navy hover:bg-emerald-400"><i class="fa-solid fa-plus mr-1"></i> Catat</button>
-        </form>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-3 mb-4">
-        <div class="rounded-xl border border-gold/30 bg-gold/5 p-4">
-          <p class="text-xs text-slate-400">Saya sudah modal</p>
-          <p id="finModal" class="mt-1 text-2xl font-extrabold text-gold">Rp 0</p>
-          <p id="finModalCount" class="mt-1 text-xs text-slate-400">0 transaksi modal</p>
-        </div>
-        <div class="rounded-xl border border-slate-600/40 bg-slate-500/5 p-4">
-          <p class="text-xs text-slate-400">Total pemasukan</p>
-          <p id="finIncome" class="mt-1 text-2xl font-extrabold text-white">Rp 0</p>
-          <p id="finIncomeCount" class="mt-1 text-xs text-slate-400">0 transaksi pemasukan</p>
-        </div>
-        <div class="rounded-xl border border-emerald2/30 bg-emerald2/5 p-4">
-          <p class="text-xs text-slate-400">Saya sudah untung</p>
-          <p id="finProfit" class="mt-1 text-2xl font-extrabold text-emerald2">Rp 0</p>
-          <p id="finRoi" class="mt-1 text-xs text-slate-400">ROI 0%</p>
+    <!-- Kalender ekonomi -->
+    <section class="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
+        <h2 class="text-sm font-bold"><i class="fa-regular fa-calendar-days mr-1 text-blue-500"></i> Kalender Ekonomi</h2>
+        <div class="ml-auto flex items-center gap-3 text-[11px] text-slate-500">
+          <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-[7px] text-rose-500"></i> Volatilitas Tinggi</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-[7px] text-amber-500"></i> Sedang</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-[7px] text-slate-400"></i> Rendah</span>
         </div>
       </div>
-
-      <ul id="finList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></ul>
-    </section>
-
-
-    <!-- Charts -->
-    <section class="grid gap-4 lg:grid-cols-2">
-      <div class="card rounded-2xl p-4">
-        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-coins text-gold mr-1"></i> Tren Harga Emas (IDR/gram)</h3>
-        <canvas id="chartGold" height="150"></canvas>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-dollar-sign text-emerald2 mr-1"></i> Kurs USD ke IDR</h3>
-        <canvas id="chartUsd" height="150"></canvas>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-globe text-gold mr-1"></i> XAU/USD (Spot Gold)</h3>
-        <canvas id="chartXau" height="150"></canvas>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <h3 class="mb-2 text-sm font-bold text-white"><i class="fa-solid fa-mobile-screen text-emerald2 mr-1"></i> Distribusi Pemakaian per Perangkat/User</h3>
-        <canvas id="chartUsage" height="150"></canvas>
-      </div>
-    </section>
-
-    <!-- Laporan Akun: ringkasan limit vs belum limit -->
-    <section class="card rounded-2xl p-4">
-      <h3 class="mb-3 text-sm font-bold text-white"><i class="fa-solid fa-clipboard-list text-gold mr-1"></i> Laporan Akun — Status Limit Bulan Ini</h3>
-      <div id="reportWrap" class="grid gap-3 md:grid-cols-3"></div>
-    </section>
-
-    <!-- Accounts table -->
-    <section class="card rounded-2xl p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-table-list text-gold mr-1"></i> Manajemen Akun Treasury</h3>
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="relative">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-            <input id="searchInput" placeholder="Cari nama, no HP, atau tipe HP..."
-              class="w-64 rounded-lg bg-navy border border-slate-700 pl-8 pr-3 py-2 text-sm outline-none focus:border-emerald2" />
-          </div>
-          <select id="filterStatus" class="rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2">
-            <option value="">Semua Status</option>
-            <option value="Aktif">Aktif</option>
-            <option value="Limit Reached">Limit Reached</option>
-            <option value="Standby Reset">Standby Reset</option>
-          </select>
-          <button id="btnAdd" class="rounded-lg bg-emerald2 px-3 py-2 text-sm font-bold text-navy hover:bg-emerald-400"><i class="fa-solid fa-plus mr-1"></i> Tambah Akun</button>
-          <button id="btnReset" class="rounded-lg border border-gold/50 text-gold px-3 py-2 text-sm font-bold hover:bg-gold/10"><i class="fa-solid fa-rotate mr-1"></i> Reset Manual</button>
-        </div>
-      </div>
-
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs uppercase text-slate-400 border-b border-slate-700">
-              <th class="py-3 px-2">Akun</th>
-              <th class="py-3 px-2">Kontak</th>
-              <th class="py-3 px-2">Perangkat</th>
-              <th class="py-3 px-2 w-56">Pemakaian Bulan Ini</th>
-              <th class="py-3 px-2">Status</th>
-              <th class="py-3 px-2">Reset Berikutnya</th>
-              <th class="py-3 px-2 text-right">Aksi</th>
+        <table class="w-full text-xs tnum">
+          <thead class="bg-slate-50 text-[11px] uppercase text-slate-500 dark:bg-slate-800/60">
+            <tr>
+              <th class="px-3 py-2 text-left">Waktu</th>
+              <th class="px-3 py-2 text-left">Negara</th>
+              <th class="px-3 py-2 text-left">Dampak</th>
+              <th class="px-3 py-2 text-left">Event</th>
+              <th class="px-3 py-2 text-right">Aktual</th>
+              <th class="px-3 py-2 text-right">Forecast</th>
+              <th class="px-3 py-2 text-right">Sebelumnya</th>
             </tr>
           </thead>
-          <tbody id="tableBody"></tbody>
+          <tbody id="calBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- Activity log -->
-    <section class="card rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-clock-rotate-left text-gold mr-1"></i> Riwayat Activity Log</h3>
-        <button id="btnClearLog" class="text-xs text-slate-400 hover:text-red-400">Bersihkan Log</button>
+    <!-- Grafik harga emas treasury -->
+    <section class="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
+        <div>
+          <h2 class="text-sm font-bold">Harga Emas <span class="text-xs font-medium text-slate-400">· Treasury</span></h2>
+          <div class="flex items-baseline gap-2">
+            <span id="goldPrice" class="tnum text-xl font-extrabold">Rp 0</span>
+            <span class="text-xs text-slate-400">/ gram</span>
+            <span id="goldChg" class="tnum rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">0.00%</span>
+          </div>
+        </div>
+        <div id="rangeBtns" class="ml-auto flex flex-wrap gap-1"></div>
       </div>
-      <ul id="logList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></ul>
+      <div class="p-3"><div class="h-[220px]"><canvas id="chartGold"></canvas></div></div>
+      <div class="flex items-center justify-between border-t border-slate-200 px-4 py-2 text-xs dark:border-slate-800">
+        <span class="text-slate-500">Terendah: <b id="goldLow" class="tnum text-rose-500">Rp 0</b></span>
+        <span class="text-slate-500">Tertinggi: <b id="goldHigh" class="tnum text-emerald-600">Rp 0</b></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- RIGHT -->
+  <aside class="space-y-4 lg:col-span-3">
+    <section class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="text-sm font-bold">USD / IDR <span class="text-xs font-medium text-slate-400">· Google Finance</span></h2>
+      <p class="mt-3 text-xs text-slate-500">Harga saat ini:</p>
+      <p id="usdNow" class="tnum text-2xl font-extrabold">Memuat...</p>
+      <p class="mt-2 text-xs text-slate-500">Harga Terakhir: <b id="usdLast" class="tnum">Menunggu...</b></p>
+      <p id="usdChg" class="mt-2 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">0.00%</p>
     </section>
 
-    <footer class="pb-8 text-center text-xs text-slate-600">Treasury Account Management &copy; 2026 — Data tersimpan lokal di browser (LocalStorage).</footer>
-  </main>
-</div>
-
-<!-- Modal Form Akun -->
-<div id="modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/60 p-4">
-  <div class="card w-full max-w-lg rounded-2xl p-6 fade-in">
-    <div class="flex items-center justify-between mb-4">
-      <h3 id="modalTitle" class="font-bold text-white">Tambah Akun Baru</h3>
-      <button id="modalClose" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form id="accountForm" class="space-y-4">
-      <input type="hidden" name="id" />
-      <div>
-        <label class="block text-xs font-semibold text-slate-400 mb-1">Nama Akun / Pemilik</label>
-        <input name="name" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+    <section class="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div class="border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
+        <h2 class="text-sm font-bold"><i class="fa-solid fa-calculator mr-1 text-blue-500"></i> Kalkulator Emas</h2>
       </div>
-      <div class="grid gap-3 sm:grid-cols-2">
+      <div class="space-y-4 p-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
-          <input name="email" type="email" required class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+          <p class="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-600">Hitung Beli</p>
+          <label class="mb-1 block text-[11px] text-slate-500">Nominal (Rp)</label>
+          <input id="buyIdr" type="number" placeholder="1.000.000"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800" />
+          <div class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+            Estimasi: <b id="buyGram" class="tnum text-emerald-600 dark:text-emerald-400">0,0000 gram</b>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">No. HP / WhatsApp</label>
-          <input name="phone" required placeholder="0812xxxxxxx" class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
+        <div class="border-t border-slate-200 pt-4 dark:border-slate-800">
+          <p class="mb-2 text-xs font-bold uppercase tracking-wide text-rose-600">Hitung Jual</p>
+          <label class="mb-1 block text-[11px] text-slate-500">Berat (gram)</label>
+          <input id="sellGram" type="number" placeholder="1,5"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800" />
+          <div class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+            Estimasi: <b id="sellIdr" class="tnum text-rose-600 dark:text-rose-400">Rp 0</b>
+          </div>
         </div>
       </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-400 mb-1">Jenis / Model Perangkat HP</label>
-        <input name="device" required placeholder="iPhone 15 Pro" class="w-full rounded-lg bg-navy border border-slate-700 px-3 py-2.5 text-sm outline-none focus:border-emerald2" />
-      </div>
-      <p class="text-xs text-slate-500">Limit default pemakaian: <span class="text-gold font-semibold">20 kali / bulan</span></p>
-      <div class="flex justify-end gap-2 pt-1">
-        <button type="button" id="modalCancel" class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Batal</button>
-        <button class="rounded-lg bg-emerald2 px-4 py-2 text-sm font-bold text-navy hover:bg-emerald-400">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast" class="hidden fixed bottom-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold shadow-xl"></div>
+    </section>
+  </aside>
+</main>
 
 <script>
-/* ============================================================
- * TREASURY ACCOUNT MANAGEMENT — Vanilla JS SPA
- * Semua data disimpan di LocalStorage.
- * ============================================================ */
+/* ---------- Helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const rupiah = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const pct = (a, b) => ((a - b) / b) * 100;
 
-/* ---------- Konstanta & Helper ---------- */
-const LIMIT = 20;                       // limit pemakaian per akun per bulan
-const KEY_USERS = 'tam_users';
-const KEY_SESSION = 'tam_session';
-const KEY_ACCOUNTS = 'tam_accounts';
-const KEY_LOGS = 'tam_logs';
+/* ---------- Theme ---------- */
+const applyTheme = (dark) => {
+  document.documentElement.classList.toggle('dark', dark);
+  $('themeIcon').className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  localStorage.setItem('tsy_theme', dark ? 'dark' : 'light');
+};
+applyTheme(localStorage.getItem('tsy_theme') === 'dark');
+$('btnTheme').onclick = () => applyTheme(!document.documentElement.classList.contains('dark'));
 
-const load = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
-const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-/** Format tanggal & jam WIB (Asia/Jakarta) */
-function wib(date = new Date(), opts = {}) {
-  return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...opts }).format(date);
-}
-/** Tanggal reset otomatis berikutnya = tanggal 1 bulan depan */
-function nextResetDate() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 1);
-}
-function toast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'fixed bottom-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold shadow-xl fade-in ' +
-    (type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald2 text-navy');
-  el.classList.remove('hidden');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.add('hidden'), 2600);
-}
-
-/* ---------- Seed Data (data awal dummy) ---------- */
-function seed() {
-  if (!load(KEY_USERS, null)) {
-    save(KEY_USERS, [{ id: uid(), name: 'Demo Treasury', email: 'demo@treasury.id', password: '123456' }]);
-  }
-  if (!load(KEY_ACCOUNTS, null)) {
-    const devices = [
-      ['Budi Santoso', 'budi@mail.com', '081234567890', 'iPhone 15 Pro', 12],
-      ['Siti Rahma', 'siti@mail.com', '081298765432', 'Samsung S23 Ultra', 20],
-      ['Andi Wijaya', 'andi@mail.com', '085711223344', 'Xiaomi 13', 4],
-      ['Dewi Lestari', 'dewi@mail.com', '087755667788', 'Oppo Reno 10', 17],
-      ['Rizky Pratama', 'rizky@mail.com', '089912345678', 'Vivo V29', 9],
-      ['Maya Putri', 'maya@mail.com', '081377889900', 'Google Pixel 8', 0],
-    ];
-    save(KEY_ACCOUNTS, devices.map(([name, email, phone, device, usage]) => ({
-      id: uid(), name, email, phone, device, usage, limit: LIMIT, createdAt: Date.now(),
-    })));
-  }
-  if (!load(KEY_LOGS, null)) {
-    save(KEY_LOGS, [{ id: uid(), text: 'Sistem diinisialisasi dengan data awal treasury.', at: Date.now() }]);
-  }
-}
-seed();
-
-/* ---------- State ---------- */
-let accounts = load(KEY_ACCOUNTS, []);
-let logs = load(KEY_LOGS, []);
-let session = load(KEY_SESSION, null);
-
-function addLog(text) {
-  logs.unshift({ id: uid(), text, at: Date.now() });
-  logs = logs.slice(0, 100);
-  save(KEY_LOGS, logs);
-  renderLogs();
-}
-
-/* ============================================================
- * AUTENTIKASI
- * ============================================================ */
-const authView = document.getElementById('authView');
-const dashView = document.getElementById('dashView');
-const authMsg = document.getElementById('authMsg');
-const tabLogin = document.getElementById('tabLogin');
-const tabRegister = document.getElementById('tabRegister');
-const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
-
-function setTab(which) {
-  const on = 'bg-emerald2 text-navy', off = 'text-slate-400 hover:text-white';
-  tabLogin.className = 'rounded-lg py-2 text-sm font-semibold transition ' + (which === 'login' ? on : off);
-  tabRegister.className = 'rounded-lg py-2 text-sm font-semibold transition ' + (which === 'register' ? on : off);
-  loginForm.classList.toggle('hidden', which !== 'login');
-  registerForm.classList.toggle('hidden', which !== 'register');
-  authMsg.classList.add('hidden');
-}
-tabLogin.onclick = () => setTab('login');
-tabRegister.onclick = () => setTab('register');
-
-function showAuthMsg(text, type = 'error') {
-  authMsg.textContent = text;
-  authMsg.className = 'mb-4 rounded-lg px-3 py-2 text-sm ' +
-    (type === 'error' ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                      : 'bg-emerald2/15 text-emerald2 border border-emerald2/30');
-}
-
-loginForm.onsubmit = e => {
-  e.preventDefault();
-  const f = new FormData(loginForm);
-  const users = load(KEY_USERS, []);
-  const user = users.find(u => u.email.toLowerCase() === String(f.get('email')).toLowerCase().trim());
-  if (!user) return showAuthMsg('Email belum terdaftar. Silakan daftar akun baru.');
-  if (user.password !== f.get('password')) return showAuthMsg('Password salah. Coba lagi.');
-  session = { id: user.id, name: user.name, email: user.email };
-  save(KEY_SESSION, session);
-  addLog(`${user.name} berhasil login ke dashboard.`);
-  loginForm.reset();
-  route();
+/* ---------- Status ON/OFF ---------- */
+let statusOn = true;
+$('btnStatus').onclick = () => {
+  statusOn = !statusOn;
+  const b = $('btnStatus');
+  b.textContent = statusOn ? 'ON' : 'OFF';
+  b.className = 'ml-1 rounded-md px-2.5 py-1 text-xs font-bold ' + (statusOn
+    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+    : 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400');
 };
 
-registerForm.onsubmit = e => {
-  e.preventDefault();
-  const f = new FormData(registerForm);
-  const email = String(f.get('email')).toLowerCase().trim();
-  if (String(f.get('password')).length < 6) return showAuthMsg('Password minimal 6 karakter.');
-  if (f.get('password') !== f.get('confirm')) return showAuthMsg('Konfirmasi password tidak cocok.');
-  const users = load(KEY_USERS, []);
-  if (users.some(u => u.email.toLowerCase() === email)) return showAuthMsg('Email sudah terdaftar. Silakan login.');
-  users.push({ id: uid(), name: f.get('name'), email, password: f.get('password') });
-  save(KEY_USERS, users);
-  registerForm.reset();
-  setTab('login');
-  showAuthMsg('Registrasi berhasil! Silakan login dengan akun Anda.', 'success');
+/* ---------- Toolbar toggles ---------- */
+$('btnPin').onclick = (e) => e.currentTarget.classList.toggle('text-blue-600');
+$('btnLock').onclick = (e) => {
+  const i = e.currentTarget.querySelector('i');
+  const locked = i.classList.contains('fa-lock-open');
+  i.className = 'fa-solid text-xs ' + (locked ? 'fa-lock' : 'fa-lock-open');
+  e.currentTarget.classList.toggle('text-blue-600', locked);
 };
+$('btnGift').onclick = () => alert('Promo: bonus 0,01 gram untuk pembelian pertama bulan ini!');
 
-document.getElementById('btnLogout').onclick = () => {
-  addLog(`${session?.name || 'Pengguna'} logout dari sistem.`);
-  session = null;
-  localStorage.removeItem(KEY_SESSION);
-  route();
-};
+/* ---------- Market state ---------- */
+const M = { gold: 2680000, usd: 17970, xau: 4052 };
+let goldOpen = M.gold, usdOpen = M.usd, xauOpen = M.xau;
 
-/* ---------- Router sederhana ---------- */
-function route() {
-  const logged = !!session;
-  authView.classList.toggle('hidden', logged);
-  authView.classList.toggle('flex', !logged);
-  dashView.classList.toggle('hidden', !logged);
-  if (logged) {
-    document.getElementById('hdrUser').textContent = session.name;
-    renderAll();
-    initCharts();
-  } else {
-    setTab('login');
-  }
+/* Quick presets + est cuan */
+const PRESETS = [10, 30, 40, 50, 60];
+let activePreset = 10;
+function renderBadges() {
+  $('quickBadges').innerHTML = PRESETS.map(p => `
+    <button data-p="${p}" class="qb rounded-md border px-2 py-1 text-xs font-bold ${p === activePreset
+      ? 'border-blue-600 bg-blue-600 text-white'
+      : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}">${p}</button>`).join('');
+  document.querySelectorAll('.qb').forEach(b => b.onclick = () => { activePreset = +b.dataset.p; renderBadges(); renderCuan(); });
 }
-
-/* ============================================================
- * JAM REAL-TIME (WIB)
- * ============================================================ */
-setInterval(() => {
-  const now = new Date();
-  const c = document.getElementById('clock');
-  if (!c) return;
-  c.textContent = wib(now, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WIB';
-  document.getElementById('dateNow').textContent =
-    wib(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}, 1000);
-
-/* ============================================================
- * LOGIKA AKUN TREASURY
- * ============================================================ */
-function statusOf(a) {
-  if (a.usage >= a.limit) return 'Limit Reached';
-  if (a.usage === 0) return 'Standby Reset';
-  return 'Aktif';
-}
-function barColor(pct) {
-  if (pct > 80) return 'bg-red-500';
-  if (pct >= 50) return 'bg-gold';
-  return 'bg-emerald2';
-}
-function statusBadge(s) {
-  const map = {
-    'Aktif': 'bg-emerald2/15 text-emerald2 border-emerald2/30',
-    'Limit Reached': 'bg-red-500/15 text-red-400 border-red-500/30',
-    'Standby Reset': 'bg-slate-500/15 text-slate-300 border-slate-500/30',
-  };
-  return `<span class="inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${map[s]}">${s}</span>`;
-}
-
-function persist() { save(KEY_ACCOUNTS, accounts); }
-
-/* ---------- Render tabel ---------- */
-const tableBody = document.getElementById('tableBody');
-const searchInput = document.getElementById('searchInput');
-const filterStatus = document.getElementById('filterStatus');
-
-function filtered() {
-  const q = searchInput.value.toLowerCase().trim();
-  const st = filterStatus.value;
-  return accounts.filter(a => {
-    const match = !q || [a.name, a.phone, a.device, a.email].some(v => v.toLowerCase().includes(q));
-    return match && (!st || statusOf(a) === st);
-  });
-}
-
-function renderTable() {
-  const rows = filtered();
-  const reset = wib(nextResetDate(), { day: 'numeric', month: 'short', year: 'numeric' });
-  if (!rows.length) {
-    tableBody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-500">Tidak ada akun yang cocok dengan pencarian.</td></tr>`;
-    return;
-  }
-  tableBody.innerHTML = rows.map(a => {
-    const pct = Math.round((a.usage / a.limit) * 100);
-    const st = statusOf(a);
-    const full = a.usage >= a.limit;
-    return `
-    <tr class="border-b border-slate-800/70 hover:bg-slate-800/30">
-      <td class="py-3 px-2">
-        <div class="flex items-center gap-2">
-          <div class="h-8 w-8 rounded-lg bg-gold/15 text-gold grid place-items-center text-xs font-bold">${a.name.charAt(0).toUpperCase()}</div>
-          <div><div class="font-semibold text-white">${a.name}</div><div class="text-xs text-slate-500">ID: ${a.id}</div></div>
-        </div>
-      </td>
-      <td class="py-3 px-2 text-xs text-slate-300">
-        <div><i class="fa-regular fa-envelope text-slate-500 mr-1"></i>${a.email}</div>
-        <div><i class="fa-brands fa-whatsapp text-emerald2 mr-1"></i>${a.phone}</div>
-      </td>
-      <td class="py-3 px-2 text-slate-300"><i class="fa-solid fa-mobile-screen-button text-slate-500 mr-1"></i>${a.device}</td>
-      <td class="py-3 px-2">
-        <div class="flex items-center justify-between text-xs mb-1"><span class="font-semibold text-white">${a.usage}/${a.limit}</span><span class="text-slate-400">${pct}%</span></div>
-        <div class="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
-          <div class="h-full ${barColor(pct)} transition-all" style="width:${pct}%"></div>
-        </div>
-      </td>
-      <td class="py-3 px-2">${statusBadge(st)}</td>
-      <td class="py-3 px-2 text-xs text-slate-400"><i class="fa-regular fa-calendar mr-1"></i>${reset}</td>
-      <td class="py-3 px-2">
-        <div class="flex justify-end gap-1.5">
-          <button data-use="${a.id}" ${full ? 'disabled' : ''}
-            class="rounded-lg px-2.5 py-1.5 text-xs font-bold ${full ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-emerald2 text-navy hover:bg-emerald-400'}">
-            ${full ? 'Limit Reached' : '+1 Gunakan'}
-          </button>
-          <button data-edit="${a.id}" class="rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-700"><i class="fa-solid fa-pen"></i></button>
-          <button data-del="${a.id}" class="rounded-lg border border-red-500/40 px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-500/10"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </td>
-    </tr>`;
+function renderCuan() {
+  $('cuanRow').innerHTML = PRESETS.map(p => {
+    const gram = (p * 1e6) / M.gold;
+    const on = p === activePreset;
+    return `<span class="${on ? 'font-bold text-rose-600 dark:text-rose-400' : ''}">Est.cuan ${p}JT
+      <i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> ${gram.toFixed(4)} gr</span>`;
   }).join('');
 }
+renderBadges();
 
-/* ---------- Delegasi klik aksi tabel ---------- */
-tableBody.addEventListener('click', e => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const { use, edit, del } = btn.dataset;
-  if (use) return useAccount(use);
-  if (edit) return openModal(edit);
-  if (del) return deleteAccount(del);
+/* ---------- Charts ---------- */
+const gridColor = () => document.documentElement.classList.contains('dark') ? 'rgba(148,163,184,.15)' : 'rgba(100,116,139,.12)';
+const baseOpts = (fmt) => ({
+  responsive: true, maintainAspectRatio: false, animation: false,
+  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmt(c.parsed.y) } } },
+  scales: {
+    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: '#94a3b8', font: { size: 10 } } },
+    y: { grid: { color: gridColor() }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: (v) => fmt(v) } },
+  },
+  elements: { point: { radius: 0 } },
+});
+const t = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const seed = (base, n, vol) => { const a = []; let v = base; for (let i = 0; i < n; i++) { v += (Math.random() - .5) * base * vol; a.push(v); } return a; };
+const labels = (n) => Array.from({ length: n }, (_, i) => { const d = new Date(Date.now() - (n - i) * 2000); return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); });
+
+const N = 40;
+const xauData = seed(M.xau, N, 0.0012);
+const chartXau = new Chart($('chartXau'), {
+  type: 'line',
+  data: { labels: labels(N), datasets: [
+    { label: 'XAU', data: xauData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.12)', fill: true, borderWidth: 2, tension: .3 },
+    { label: 'Ask', data: xauData.map(v => v + 0.6), borderColor: '#94a3b8', borderWidth: 1, borderDash: [4, 3], hidden: true, tension: .3 },
+    { label: 'Bid', data: xauData.map(v => v - 0.6), borderColor: '#94a3b8', borderWidth: 1, borderDash: [4, 3], hidden: true, tension: .3 },
+  ] },
+  options: baseOpts(v => '$' + v.toFixed(2)),
+});
+$('spreadToggle').onchange = (e) => {
+  chartXau.data.datasets[1].hidden = !e.target.checked;
+  chartXau.data.datasets[2].hidden = !e.target.checked;
+  chartXau.update('none');
+};
+
+const chartGold = new Chart($('chartGold'), {
+  type: 'line',
+  data: { labels: labels(N), datasets: [{ data: seed(M.gold, N, 0.0009), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.10)', fill: true, borderWidth: 2, tension: .3 }] },
+  options: baseOpts(v => 'Rp ' + Math.round(v).toLocaleString('id-ID')),
 });
 
-function useAccount(id) {
-  const a = accounts.find(x => x.id === id);
-  if (!a || a.usage >= a.limit) return;
-  a.usage++;
-  persist();
-  addLog(`Akun ${a.name} (${a.device}) digunakan pada ${wib(new Date(), { day: '2-digit', month: 'short', year: 'numeric' })}, ${wib(new Date(), { hour: '2-digit', minute: '2-digit', hour12: false })} WIB. (${a.usage}/${a.limit})`);
-  renderAll();
-  toast(a.usage >= a.limit ? `${a.name} mencapai limit bulanan!` : `Pemakaian ${a.name}: ${a.usage}/${a.limit}`, a.usage >= a.limit ? 'error' : 'success');
-}
-
-function deleteAccount(id) {
-  const a = accounts.find(x => x.id === id);
-  if (!a) return;
-  if (!confirm(`Hapus akun "${a.name}" (${a.device})? Tindakan ini tidak dapat dibatalkan.`)) return;
-  accounts = accounts.filter(x => x.id !== id);
-  persist();
-  addLog(`Akun ${a.name} dihapus dari sistem treasury.`);
-  renderAll();
-  toast('Akun berhasil dihapus.');
-}
-
-/* ---------- Modal Tambah / Edit ---------- */
-const modal = document.getElementById('modal');
-const accountForm = document.getElementById('accountForm');
-const modalTitle = document.getElementById('modalTitle');
-
-function openModal(id) {
-  accountForm.reset();
-  if (id) {
-    const a = accounts.find(x => x.id === id);
-    modalTitle.textContent = 'Edit Akun Treasury';
-    accountForm.id.value = a.id;
-    accountForm.name.value = a.name;
-    accountForm.email.value = a.email;
-    accountForm.phone.value = a.phone;
-    accountForm.device.value = a.device;
-  } else {
-    modalTitle.textContent = 'Tambah Akun Baru';
-    accountForm.id.value = '';
-  }
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-}
-function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
-document.getElementById('btnAdd').onclick = () => openModal();
-document.getElementById('modalClose').onclick = closeModal;
-document.getElementById('modalCancel').onclick = closeModal;
-modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-
-accountForm.onsubmit = e => {
-  e.preventDefault();
-  const f = Object.fromEntries(new FormData(accountForm));
-  if (f.id) {
-    const a = accounts.find(x => x.id === f.id);
-    Object.assign(a, { name: f.name, email: f.email, phone: f.phone, device: f.device });
-    addLog(`Data akun ${a.name} diperbarui (perangkat: ${a.device}).`);
-    toast('Perubahan akun tersimpan.');
-  } else {
-    accounts.push({ id: uid(), name: f.name, email: f.email, phone: f.phone, device: f.device, usage: 0, limit: LIMIT, createdAt: Date.now() });
-    addLog(`Akun baru ${f.name} (${f.device}) ditambahkan dengan limit ${LIMIT}x/bulan.`);
-    toast('Akun baru berhasil ditambahkan.');
-  }
-  persist();
-  closeModal();
-  renderAll();
-};
-
-/* ---------- Reset manual bulanan ---------- */
-document.getElementById('btnReset').onclick = () => {
-  if (!confirm('Reset hitungan pemakaian SEMUA akun menjadi 0? (simulasi reset bulanan)')) return;
-  accounts.forEach(a => a.usage = 0);
-  persist();
-  addLog('Reset manual dijalankan: seluruh counter pemakaian dikembalikan ke 0.');
-  renderAll();
-  toast('Semua counter pemakaian telah direset.');
-};
-
-/* ---------- Activity log ---------- */
-function renderLogs() {
-  const list = document.getElementById('logList');
-  if (!list) return;
-  if (!logs.length) { list.innerHTML = '<li class="text-sm text-slate-500">Belum ada aktivitas.</li>'; return; }
-  list.innerHTML = logs.map(l => `
-    <li class="flex gap-3 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
-      <i class="fa-solid fa-circle-dot text-gold text-[10px] mt-1.5"></i>
-      <div>
-        <p class="text-sm text-slate-200">${l.text}</p>
-        <p class="text-xs text-slate-500">${wib(new Date(l.at), { day: '2-digit', month: 'short', year: 'numeric' })}, ${wib(new Date(l.at), { hour: '2-digit', minute: '2-digit', hour12: false })} WIB</p>
-      </div>
-    </li>`).join('');
-}
-document.getElementById('btnClearLog').onclick = () => {
-  if (!confirm('Bersihkan seluruh riwayat aktivitas?')) return;
-  logs = []; save(KEY_LOGS, logs); renderLogs();
-};
-
-/* ---------- Statistik (nilai pasar bergerak realtime) ---------- */
-// Acuan pasar per 12 Agustus 2026 (emas Antam, kurs & spot gold aktual)
-const market = {
-  gold: 2_680_000,  // IDR / gram (Antam 1 gram)
-  usd: 17_970,      // USD/IDR
-  xau: 4_052,       // XAU/USD (spot, per troy ounce)
-  goldDelta: -1.1,  // % perubahan terakhir (turun Rp30.000)
-};
-function renderStats() {
-  const active = accounts.filter(a => statusOf(a) === 'Aktif').length;
-  const usage = accounts.reduce((s, a) => s + a.usage, 0);
-  document.getElementById('statActive').textContent = active;
-  document.getElementById('statTotal').textContent = accounts.length;
-  document.getElementById('statUsage').textContent = usage + 'x';
-  document.getElementById('statCap').textContent = accounts.length * LIMIT;
-  document.getElementById('statGold').textContent = rupiah(market.gold);
-  const up = (market.goldDelta ?? 0) >= 0;
-  const deltaEl = document.getElementById('statGoldDelta');
-  deltaEl.className = 'mt-1 text-xs ' + (up ? 'text-emerald2' : 'text-red-400');
-  deltaEl.innerHTML = `<i class="fa-solid fa-arrow-trend-${up ? 'up' : 'down'}"></i> ${up ? '+' : ''}${(market.goldDelta ?? 0).toFixed(2).replace('.', ',')}% · live`;
-  document.getElementById('statUsd').textContent = rupiah(market.usd);
-  document.getElementById('statXau').textContent = 'XAU/USD $' + Math.round(market.xau).toLocaleString('en-US');
-}
-
-/* ---------- Laporan Akun (limit vs belum limit) ---------- */
-function renderReport() {
-  const wrap = document.getElementById('reportWrap');
-  if (!wrap) return;
-  const groups = [
-    { key: 'Limit Reached', title: 'Sudah Limit (20/20)', icon: 'fa-circle-exclamation', tone: 'text-red-400', ring: 'border-red-500/30 bg-red-500/5' },
-    { key: 'Aktif', title: 'Masih Bisa Dipakai', icon: 'fa-circle-play', tone: 'text-emerald2', ring: 'border-emerald2/30 bg-emerald2/5' },
-    { key: 'Standby Reset', title: 'Belum Dipakai', icon: 'fa-circle-pause', tone: 'text-slate-300', ring: 'border-slate-600/40 bg-slate-500/5' },
-  ];
-  const total = accounts.length || 1;
-  wrap.innerHTML = groups.map(g => {
-    const list = accounts.filter(a => statusOf(a) === g.key);
-    const pct = Math.round((list.length / total) * 100);
-    const items = list.length
-      ? list.map(a => `
-        <li class="flex items-center justify-between gap-2 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
-          <span class="truncate text-sm text-slate-200">${a.name}</span>
-          <span class="shrink-0 font-mono text-xs ${a.usage >= a.limit ? 'text-red-400' : 'text-slate-400'}">${a.usage}/${a.limit}</span>
-        </li>`).join('')
-      : '<li class="text-xs text-slate-500 px-1">Tidak ada akun pada kategori ini.</li>';
-    return `
-      <div class="rounded-xl border p-4 ${g.ring}">
-        <div class="flex items-center justify-between mb-1">
-          <p class="text-sm font-bold ${g.tone}"><i class="fa-solid ${g.icon} mr-1"></i> ${g.title}</p>
-          <span class="text-2xl font-extrabold text-white">${list.length}</span>
-        </div>
-        <div class="h-1.5 w-full rounded-full bg-slate-800 mb-3"><div class="h-1.5 rounded-full ${g.key === 'Limit Reached' ? 'bg-red-500' : g.key === 'Aktif' ? 'bg-emerald2' : 'bg-slate-500'}" style="width:${pct}%"></div></div>
-        <ul class="space-y-1.5 max-h-44 overflow-y-auto pr-1">${items}</ul>
-      </div>`;
-  }).join('');
-}
-
-
-/* ---------- Chart.js (REALTIME) ---------- */
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
-Chart.defaults.font.family = 'Inter, sans-serif';
-
-let charts = {};
-let tickTimer = null;
-const POINTS = 20;               // jumlah titik yang tampil di grafik realtime
-const TICK_MS = 2000;            // interval update realtime (2 detik)
-
-/** Label jam:menit:detik untuk sumbu X realtime */
-function timeLabel(d = new Date()) {
-  return wib(d, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-}
-/** Random walk kecil untuk mensimulasikan pergerakan harga live */
-function walk(value, vol) {
-  return value * (1 + (Math.random() - 0.5) * vol);
-}
-
-// Riwayat harga awal (diisi mundur agar grafik langsung terlihat penuh)
-const history = { labels: [], gold: [], usd: [], xau: [] };
-(function seedHistory() {
-  const now = Date.now();
-  let g = market.gold, u = market.usd, x = market.xau;
-  for (let i = POINTS - 1; i >= 0; i--) {
-    g = walk(g, .004); u = walk(u, .003); x = walk(x, .005);
-    history.labels.push(timeLabel(new Date(now - i * TICK_MS)));
-    history.gold.push(Math.round(g));
-    history.usd.push(Math.round(u));
-    history.xau.push(Math.round(x));
-  }
-  market.gold = g; market.usd = u; market.xau = x;
-})();
-
-const commonOpts = {
-  responsive: true,
-  animation: { duration: 400 },
-  interaction: { intersect: false, mode: 'index' },
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } },
-    y: { grid: { color: 'rgba(148,163,184,.1)' } },
-  },
-};
-
-function initCharts() {
-  Object.values(charts).forEach(c => c.destroy());
-  charts = {};
-
-  charts.gold = new Chart(document.getElementById('chartGold'), {
-    type: 'line',
-    data: { labels: [...history.labels], datasets: [{ data: [...history.gold], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.15)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
-    options: commonOpts,
-  });
-
-  charts.usd = new Chart(document.getElementById('chartUsd'), {
-    type: 'line',
-    data: { labels: [...history.labels], datasets: [{ data: [...history.usd], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.2)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
-    options: commonOpts,
-  });
-
-  charts.xau = new Chart(document.getElementById('chartXau'), {
-    type: 'line',
-    data: { labels: [...history.labels], datasets: [{ data: [...history.xau], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,.12)', tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
-    options: commonOpts,
-  });
-
-  renderUsageChart();
-  startRealtime();
-}
-
-/** Loop realtime: geser 1 titik tiap TICK_MS dan perbarui semua grafik */
-function startRealtime() {
-  clearInterval(tickTimer);
-  tickTimer = setInterval(() => {
-    if (!session) return;
-    const prevGold = market.gold;
-    market.gold = walk(market.gold, .004);
-    market.usd = walk(market.usd, .003);
-    market.xau = walk(market.xau, .005);
-    market.goldDelta = ((market.gold - prevGold) / prevGold) * 100;
-
-    history.labels.push(timeLabel());
-    history.gold.push(Math.round(market.gold));
-    history.usd.push(Math.round(market.usd));
-    history.xau.push(Math.round(market.xau));
-    ['labels', 'gold', 'usd', 'xau'].forEach(k => { if (history[k].length > POINTS) history[k].shift(); });
-
-    [['gold', 'gold'], ['usd', 'usd'], ['xau', 'xau']].forEach(([c, k]) => {
-      const ch = charts[c];
-      if (!ch) return;
-      ch.data.labels = [...history.labels];
-      ch.data.datasets[0].data = [...history[k]];
-      ch.update('none');
-    });
-
-    renderUsageChart();   // grafik pemakaian ikut realtime
-    renderStats();
-  }, TICK_MS);
-}
-
-function renderUsageChart() {
-  const el = document.getElementById('chartUsage');
-  if (!el) return;
-  const labels = accounts.map(a => `${a.name.split(' ')[0]} · ${a.device}`);
-  const data = accounts.map(a => a.usage);
-  const colors = data.map(v => v / LIMIT > .8 ? '#ef4444' : v / LIMIT >= .5 ? '#f59e0b' : '#10b981');
-  if (charts.usage) {
-    charts.usage.data.labels = labels;
-    charts.usage.data.datasets[0].data = data;
-    charts.usage.data.datasets[0].backgroundColor = colors;
-    charts.usage.update('none');
-    return;
-  }
-  charts.usage = new Chart(el, {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, maxBarThickness: 36 }] },
-    options: { ...commonOpts, scales: { ...commonOpts.scales, y: { beginAtZero: true, suggestedMax: LIMIT, grid: { color: 'rgba(148,163,184,.1)' } } } },
+/* Range filter */
+const RANGES = [['15 Mnt', 15], ['1 Jam', 25], ['4 Jam', 40], ['8 Jam', 60], ['1 Hari', 80]];
+let activeRange = 40;
+function renderRanges() {
+  $('rangeBtns').innerHTML = RANGES.map(([l, n]) => `
+    <button data-n="${n}" class="rb rounded-md border px-2 py-1 text-[11px] font-semibold ${n === activeRange
+      ? 'border-blue-600 bg-blue-600 text-white'
+      : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}">${l}</button>`).join('');
+  document.querySelectorAll('.rb').forEach(b => b.onclick = () => {
+    activeRange = +b.dataset.n; renderRanges();
+    const d = chartGold.data.datasets[0];
+    while (d.data.length > activeRange) { d.data.shift(); chartGold.data.labels.shift(); }
+    while (d.data.length < activeRange) { d.data.unshift(d.data[0] * (1 + (Math.random() - .5) * .002)); chartGold.data.labels.unshift(''); }
+    chartGold.update('none'); updateFooter();
   });
 }
+renderRanges();
 
-/* ---------- Modal & Untung ---------- */
-const KEY_FIN = 'tam_finance';
-let finances = load(KEY_FIN, []);
-const finForm = document.getElementById('finForm');
-
-function renderFinance() {
-  const modal = finances.filter(f => f.type === 'modal');
-  const income = finances.filter(f => f.type === 'income');
-  const totalModal = modal.reduce((s, f) => s + f.amount, 0);
-  const totalIncome = income.reduce((s, f) => s + f.amount, 0);
-  const profit = totalIncome - totalModal;
-  const roi = totalModal ? (profit / totalModal) * 100 : 0;
-
-  document.getElementById('finModal').textContent = rupiah(totalModal);
-  document.getElementById('finModalCount').textContent = modal.length + ' transaksi modal';
-  document.getElementById('finIncome').textContent = rupiah(totalIncome);
-  document.getElementById('finIncomeCount').textContent = income.length + ' transaksi pemasukan';
-
-  const pEl = document.getElementById('finProfit');
-  pEl.textContent = (profit < 0 ? '- ' : '') + rupiah(Math.abs(profit));
-  pEl.className = 'mt-1 text-2xl font-extrabold ' + (profit < 0 ? 'text-red-400' : 'text-emerald2');
-  document.getElementById('finRoi').textContent =
-    (profit < 0 ? 'Masih rugi · ' : 'ROI ') + roi.toFixed(1).replace('.', ',') + '%';
-
-  const list = document.getElementById('finList');
-  list.innerHTML = finances.length
-    ? [...finances].reverse().map(f => `
-      <li class="flex items-center justify-between gap-3 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
-        <div class="min-w-0">
-          <p class="truncate text-sm text-slate-200">${f.note || (f.type === 'modal' ? 'Modal' : 'Pemasukan')}</p>
-          <p class="text-xs text-slate-500">${f.date}</p>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-          <span class="font-mono text-sm font-bold ${f.type === 'modal' ? 'text-gold' : 'text-emerald2'}">${f.type === 'modal' ? '-' : '+'} ${rupiah(f.amount)}</span>
-          <button data-fin="${f.id}" class="text-slate-500 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </li>`).join('')
-    : '<li class="text-xs text-slate-500 px-1">Belum ada catatan modal atau pemasukan.</li>';
-
-  list.querySelectorAll('[data-fin]').forEach(b => b.onclick = () => {
-    finances = finances.filter(f => f.id !== b.dataset.fin);
-    save(KEY_FIN, finances);
-    addLog('Catatan keuangan dihapus.');
-    renderAll();
-  });
+function updateFooter() {
+  const d = chartGold.data.datasets[0].data;
+  $('goldLow').textContent = rupiah(Math.min(...d));
+  $('goldHigh').textContent = rupiah(Math.max(...d));
 }
 
-finForm.onsubmit = e => {
-  e.preventDefault();
-  const f = Object.fromEntries(new FormData(finForm));
-  const amount = Number(f.amount);
-  if (!amount || amount <= 0) return toast('Nominal tidak valid.', 'error');
-  finances.push({
-    id: uid(), type: f.type, note: String(f.note || '').trim(), amount,
-    date: wib(new Date(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB',
-  });
-  save(KEY_FIN, finances);
-  addLog(`${f.type === 'modal' ? 'Modal' : 'Pemasukan'} ${rupiah(amount)} dicatat${f.note ? ' (' + f.note + ')' : ''}.`);
-  finForm.reset();
-  renderAll();
-  toast('Catatan keuangan tersimpan.');
-};
-
-/* ---------- Render agregat ---------- */
-function renderAll() {
-  renderStats();
-  renderTable();
-  renderLogs();
-  renderUsageChart();
-  renderReport();
-  renderFinance();
+/* ---------- Realtime loop ---------- */
+function push(chart, di, val, max) {
+  const ds = chart.data.datasets[di];
+  ds.data.push(val); chart.data.labels.push(t());
+  while (ds.data.length > max) { ds.data.shift(); }
+  while (chart.data.labels.length > max) chart.data.labels.shift();
+}
+function setChg(el, p) {
+  el.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+  el.className = 'tnum rounded px-1.5 py-0.5 text-[11px] font-bold ' + (p >= 0
+    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+    : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400');
 }
 
+function tick() {
+  if (!statusOn) return;
+  M.xau = Math.max(1, M.xau + (Math.random() - .5) * M.xau * 0.0012);
+  M.gold = Math.max(1, M.gold + (Math.random() - .5) * M.gold * 0.0009);
+  const prevUsd = M.usd;
+  M.usd = Math.max(1, M.usd + (Math.random() - .5) * M.usd * 0.0005);
 
-searchInput.addEventListener('input', renderTable);
-filterStatus.addEventListener('change', renderTable);
+  push(chartXau, 0, M.xau, N);
+  chartXau.data.datasets[1].data = chartXau.data.datasets[0].data.map(v => v + 0.6);
+  chartXau.data.datasets[2].data = chartXau.data.datasets[0].data.map(v => v - 0.6);
+  chartXau.update('none');
 
-/* ============================================================
- * PANEL ADMIN (sebelum masuk dashboard)
- * ============================================================ */
-const ADMIN_CODE = 'pojokbusana30';
-const adminModal = document.getElementById('adminModal');
-const adminCodeForm = document.getElementById('adminCodeForm');
-const adminPanel = document.getElementById('adminPanel');
+  const gds = chartGold.data.datasets[0];
+  gds.data.push(M.gold); chartGold.data.labels.push(t());
+  while (gds.data.length > activeRange) { gds.data.shift(); chartGold.data.labels.shift(); }
+  chartGold.update('none');
 
-function openAdmin() {
-  adminCodeForm.classList.remove('hidden');
-  adminPanel.classList.add('hidden');
-  document.getElementById('adminErr').classList.add('hidden');
-  adminCodeForm.reset();
-  adminModal.classList.remove('hidden');
-  adminModal.classList.add('flex');
+  $('xauPrice').textContent = '$' + M.xau.toFixed(2);
+  setChg($('xauChg'), pct(M.xau, xauOpen));
+  $('goldPrice').textContent = rupiah(M.gold);
+  setChg($('goldChg'), pct(M.gold, goldOpen));
+  $('usdNow').textContent = rupiah(M.usd);
+  $('usdLast').textContent = rupiah(prevUsd);
+  setChg($('usdChg'), pct(M.usd, usdOpen));
+  updateFooter(); renderCuan(); calcAll();
 }
-function closeAdmin() { adminModal.classList.add('hidden'); adminModal.classList.remove('flex'); }
-document.getElementById('btnAdminGate').onclick = openAdmin;
-document.getElementById('adminClose').onclick = closeAdmin;
-adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdmin(); });
+tick();
+setInterval(tick, 2000);
 
-adminCodeForm.onsubmit = e => {
-  e.preventDefault();
-  const code = String(new FormData(adminCodeForm).get('code')).trim();
-  if (code !== ADMIN_CODE) {
-    document.getElementById('adminErr').classList.remove('hidden');
-    return;
-  }
-  adminCodeForm.classList.add('hidden');
-  adminPanel.classList.remove('hidden');
-  renderAdmin();
-  addLog('Admin membuka panel daftar akun dengan kode akses.');
-};
+/* ---------- Kalkulator ---------- */
+function calcAll() {
+  const idr = parseFloat($('buyIdr').value);
+  $('buyGram').textContent = (idr > 0 ? (idr / M.gold).toFixed(4) : '0,0000').replace('.', ',') + ' gram';
+  const gr = parseFloat($('sellGram').value);
+  $('sellIdr').textContent = rupiah(gr > 0 ? gr * M.gold * 0.97 : 0);
+}
+$('buyIdr').oninput = calcAll;
+$('sellGram').oninput = calcAll;
 
-/** Tampilkan ringkasan + daftar user login & akun treasury */
-function renderAdmin() {
-  const users = load(KEY_USERS, []);
-  const limitReached = accounts.filter(a => statusOf(a) === 'Limit Reached').length;
-  const belum = accounts.length - limitReached;
-
-  document.getElementById('adminSummary').innerHTML = `
-    <div class="rounded-xl border border-slate-700 bg-navy/60 p-3">
-      <p class="text-xs text-slate-400">Total Akun Treasury</p>
-      <p class="text-2xl font-extrabold text-white">${accounts.length}</p>
-    </div>
-    <div class="rounded-xl border border-red-500/30 bg-red-500/5 p-3">
-      <p class="text-xs text-slate-400">Sudah Limit</p>
-      <p class="text-2xl font-extrabold text-red-400">${limitReached}</p>
-    </div>
-    <div class="rounded-xl border border-emerald2/30 bg-emerald2/5 p-3">
-      <p class="text-xs text-slate-400">Belum Limit</p>
-      <p class="text-2xl font-extrabold text-emerald2">${belum}</p>
-    </div>`;
-
-  document.getElementById('adminUsers').innerHTML = users.length
-    ? users.map(u => `
-      <li class="flex items-center justify-between rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
-        <span class="text-sm text-slate-200">${u.name}</span>
-        <span class="text-xs text-slate-400">${u.email}</span>
-      </li>`).join('')
-    : '<li class="text-xs text-slate-500">Belum ada user terdaftar.</li>';
-
-  document.getElementById('adminAccounts').innerHTML = accounts.map(a => {
-    const s = statusOf(a);
-    return `<tr class="border-b border-slate-800">
-      <td class="py-2 px-2 text-slate-200">${a.name}</td>
-      <td class="py-2 px-2 text-slate-400">${a.device}</td>
-      <td class="py-2 px-2 font-mono ${a.usage >= a.limit ? 'text-red-400' : 'text-slate-300'}">${a.usage}/${a.limit}</td>
-      <td class="py-2 px-2">${statusBadge(s)}</td>
+/* ---------- Kalender Ekonomi ---------- */
+const EVENTS = [
+  ['13:00', 'EUR', 3, 'German CPI (YoY)', '2.4%', '2.3%', '2.3%'],
+  ['15:30', 'GBP', 2, 'BoE Gov Speech', '-', '-', '-'],
+  ['19:30', 'USD', 3, 'Core CPI (MoM)', '-', '0.3%', '0.2%'],
+  ['19:30', 'USD', 3, 'CPI (YoY)', '-', '2.9%', '3.0%'],
+  ['21:00', 'USD', 2, 'Crude Oil Inventories', '-', '-1.2M', '2.4M'],
+  ['22:00', 'USD', 1, 'Fed Beige Book', '-', '-', '-'],
+  ['06:30', 'AUD', 2, 'Employment Change', '-', '25.0K', '17.6K'],
+  ['08:00', 'CNY', 1, 'Trade Balance', '-', '95.2B', '104.8B'],
+  ['14:00', 'JPY', 1, 'BoJ Core CPI', '-', '1.8%', '1.9%'],
+];
+const impact = { 3: ['Tinggi', 'text-rose-500'], 2: ['Sedang', 'text-amber-500'], 1: ['Rendah', 'text-slate-400'] };
+function renderCal(q = '') {
+  const rows = EVENTS.filter(e => (e[2] + e[3]).toString().toLowerCase().includes(q) || e[3].toLowerCase().includes(q) || e[1].toLowerCase().includes(q));
+  $('calBody').innerHTML = rows.length ? rows.map(e => {
+    const [lab, col] = impact[e[2]];
+    return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+      <td class="px-3 py-2 font-semibold">${e[0]}</td>
+      <td class="px-3 py-2"><span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold dark:bg-slate-800">${e[1]}</span></td>
+      <td class="px-3 py-2 ${col}" title="${lab}">${'<i class="fa-solid fa-bolt text-[10px]"></i>'.repeat(e[2])}</td>
+      <td class="px-3 py-2">${e[3]}</td>
+      <td class="px-3 py-2 text-right font-bold ${e[4] === '-' ? 'text-slate-400' : 'text-blue-600 dark:text-blue-400'}">${e[4]}</td>
+      <td class="px-3 py-2 text-right text-slate-500">${e[5]}</td>
+      <td class="px-3 py-2 text-right text-slate-400">${e[6]}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="4" class="py-3 px-2 text-xs text-slate-500">Belum ada akun treasury.</td></tr>';
+  }).join('') : '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">Tidak ada event cocok.</td></tr>';
 }
-
-/* ---------- Start ---------- */
-
-route();
+renderCal();
+$('miniSearch').oninput = (e) => renderCal(e.target.value.toLowerCase());
 </script>
 </body>
 </html>
