@@ -891,6 +891,69 @@ function renderUsageChart() {
   });
 }
 
+/* ---------- Modal & Untung ---------- */
+const KEY_FIN = 'tam_finance';
+let finances = load(KEY_FIN, []);
+const finForm = document.getElementById('finForm');
+
+function renderFinance() {
+  const modal = finances.filter(f => f.type === 'modal');
+  const income = finances.filter(f => f.type === 'income');
+  const totalModal = modal.reduce((s, f) => s + f.amount, 0);
+  const totalIncome = income.reduce((s, f) => s + f.amount, 0);
+  const profit = totalIncome - totalModal;
+  const roi = totalModal ? (profit / totalModal) * 100 : 0;
+
+  document.getElementById('finModal').textContent = rupiah(totalModal);
+  document.getElementById('finModalCount').textContent = modal.length + ' transaksi modal';
+  document.getElementById('finIncome').textContent = rupiah(totalIncome);
+  document.getElementById('finIncomeCount').textContent = income.length + ' transaksi pemasukan';
+
+  const pEl = document.getElementById('finProfit');
+  pEl.textContent = (profit < 0 ? '- ' : '') + rupiah(Math.abs(profit));
+  pEl.className = 'mt-1 text-2xl font-extrabold ' + (profit < 0 ? 'text-red-400' : 'text-emerald2');
+  document.getElementById('finRoi').textContent =
+    (profit < 0 ? 'Masih rugi · ' : 'ROI ') + roi.toFixed(1).replace('.', ',') + '%';
+
+  const list = document.getElementById('finList');
+  list.innerHTML = finances.length
+    ? [...finances].reverse().map(f => `
+      <li class="flex items-center justify-between gap-3 rounded-lg bg-navy/60 border border-slate-800 px-3 py-2">
+        <div class="min-w-0">
+          <p class="truncate text-sm text-slate-200">${f.note || (f.type === 'modal' ? 'Modal' : 'Pemasukan')}</p>
+          <p class="text-xs text-slate-500">${f.date}</p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="font-mono text-sm font-bold ${f.type === 'modal' ? 'text-gold' : 'text-emerald2'}">${f.type === 'modal' ? '-' : '+'} ${rupiah(f.amount)}</span>
+          <button data-fin="${f.id}" class="text-slate-500 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </li>`).join('')
+    : '<li class="text-xs text-slate-500 px-1">Belum ada catatan modal atau pemasukan.</li>';
+
+  list.querySelectorAll('[data-fin]').forEach(b => b.onclick = () => {
+    finances = finances.filter(f => f.id !== b.dataset.fin);
+    save(KEY_FIN, finances);
+    addLog('Catatan keuangan dihapus.');
+    renderAll();
+  });
+}
+
+finForm.onsubmit = e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(finForm));
+  const amount = Number(f.amount);
+  if (!amount || amount <= 0) return toast('Nominal tidak valid.', 'error');
+  finances.push({
+    id: uid(), type: f.type, note: String(f.note || '').trim(), amount,
+    date: wib(new Date(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' WIB',
+  });
+  save(KEY_FIN, finances);
+  addLog(`${f.type === 'modal' ? 'Modal' : 'Pemasukan'} ${rupiah(amount)} dicatat${f.note ? ' (' + f.note + ')' : ''}.`);
+  finForm.reset();
+  renderAll();
+  toast('Catatan keuangan tersimpan.');
+};
+
 /* ---------- Render agregat ---------- */
 function renderAll() {
   renderStats();
@@ -898,6 +961,7 @@ function renderAll() {
   renderLogs();
   renderUsageChart();
   renderReport();
+  renderFinance();
 }
 
 
