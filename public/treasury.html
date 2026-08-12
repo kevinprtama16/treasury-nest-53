@@ -204,6 +204,44 @@
       </div>
     </section>
 
+    <!-- Modal & Untung -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-sack-dollar text-gold mr-1"></i> Modal &amp; Keuntungan</h3>
+        <form id="finForm" class="flex flex-wrap items-center gap-2">
+          <select name="type" class="rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2">
+            <option value="modal">Modal Keluar</option>
+            <option value="income">Pemasukan</option>
+          </select>
+          <input name="note" placeholder="Keterangan" class="w-44 rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2" />
+          <input name="amount" type="number" min="0" step="1000" required placeholder="Nominal (Rp)"
+            class="w-40 rounded-lg bg-navy border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald2" />
+          <button class="rounded-lg bg-emerald2 px-3 py-2 text-sm font-bold text-navy hover:bg-emerald-400"><i class="fa-solid fa-plus mr-1"></i> Catat</button>
+        </form>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3 mb-4">
+        <div class="rounded-xl border border-gold/30 bg-gold/5 p-4">
+          <p class="text-xs text-slate-400">Saya sudah modal</p>
+          <p id="finModal" class="mt-1 text-2xl font-extrabold text-gold">Rp 0</p>
+          <p id="finModalCount" class="mt-1 text-xs text-slate-400">0 transaksi modal</p>
+        </div>
+        <div class="rounded-xl border border-slate-600/40 bg-slate-500/5 p-4">
+          <p class="text-xs text-slate-400">Total pemasukan</p>
+          <p id="finIncome" class="mt-1 text-2xl font-extrabold text-white">Rp 0</p>
+          <p id="finIncomeCount" class="mt-1 text-xs text-slate-400">0 transaksi pemasukan</p>
+        </div>
+        <div class="rounded-xl border border-emerald2/30 bg-emerald2/5 p-4">
+          <p class="text-xs text-slate-400">Saya sudah untung</p>
+          <p id="finProfit" class="mt-1 text-2xl font-extrabold text-emerald2">Rp 0</p>
+          <p id="finRoi" class="mt-1 text-xs text-slate-400">ROI 0%</p>
+        </div>
+      </div>
+
+      <ul id="finList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></ul>
+    </section>
+
+
     <!-- Charts -->
     <section class="grid gap-4 lg:grid-cols-2">
       <div class="card rounded-2xl p-4">
