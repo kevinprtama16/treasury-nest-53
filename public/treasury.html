@@ -715,11 +715,12 @@ document.getElementById('btnClearLog').onclick = () => {
 };
 
 /* ---------- Statistik (nilai pasar bergerak realtime) ---------- */
+// Acuan pasar per 12 Agustus 2026 (emas Antam, kurs & spot gold aktual)
 const market = {
-  gold: 1_385_000,  // IDR / gram
-  usd: 16_250,      // USD/IDR
-  xau: 2_412,       // XAU/USD
-  goldDelta: 0.8,   // % perubahan terakhir
+  gold: 2_680_000,  // IDR / gram (Antam 1 gram)
+  usd: 17_970,      // USD/IDR
+  xau: 4_052,       // XAU/USD (spot, per troy ounce)
+  goldDelta: -1.1,  // % perubahan terakhir (turun Rp30.000)
 };
 function renderStats() {
   const active = accounts.filter(a => statusOf(a) === 'Aktif').length;
