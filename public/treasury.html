@@ -196,6 +196,7 @@ const applyTheme = (dark) => {
   document.documentElement.classList.toggle('dark', dark);
   $('themeIcon').className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   localStorage.setItem('tsy_theme', dark ? 'dark' : 'light');
+  if (typeof loadTV === 'function') loadTV();
 };
 applyTheme(localStorage.getItem('tsy_theme') === 'dark');
 $('btnTheme').onclick = () => applyTheme(!document.documentElement.classList.contains('dark'));
