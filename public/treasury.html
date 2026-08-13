@@ -257,21 +257,39 @@ const seed = (base, n, vol) => { const a = []; let v = base; for (let i = 0; i <
 const labels = (n) => Array.from({ length: n }, (_, i) => { const d = new Date(Date.now() - (n - i) * 2000); return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); });
 
 const N = 40;
-const xauData = seed(M.xau, N, 0.0012);
-const chartXau = new Chart($('chartXau'), {
-  type: 'line',
-  data: { labels: labels(N), datasets: [
-    { label: 'XAU', data: xauData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.12)', fill: true, borderWidth: 2, tension: .3 },
-    { label: 'Ask', data: xauData.map(v => v + 0.6), borderColor: '#94a3b8', borderWidth: 1, borderDash: [4, 3], hidden: true, tension: .3 },
-    { label: 'Bid', data: xauData.map(v => v - 0.6), borderColor: '#94a3b8', borderWidth: 1, borderDash: [4, 3], hidden: true, tension: .3 },
-  ] },
-  options: baseOpts(v => '$' + v.toFixed(2)),
+
+// ---- TradingView candlestick XAU/USD ----
+let tvInterval = '15';
+function loadTV() {
+  const dark = document.documentElement.classList.contains('dark');
+  const el = $('tvXau');
+  el.innerHTML = '';
+  const s = document.createElement('script');
+  s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  s.async = true;
+  s.innerHTML = JSON.stringify({
+    autosize: true,
+    symbol: 'FOREXCOM:XAUUSD',
+    interval: tvInterval,
+    timezone: 'Asia/Jakarta',
+    theme: dark ? 'dark' : 'light',
+    style: '1',
+    locale: 'id',
+    hide_side_toolbar: false,
+    allow_symbol_change: true,
+    details: true,
+    support_host: 'https://www.tradingview.com'
+  });
+  el.appendChild(s);
+}
+document.querySelectorAll('[data-tvint]').forEach(b => b.onclick = () => {
+  tvInterval = b.dataset.tvint;
+  document.querySelectorAll('[data-tvint]').forEach(x => x.classList.remove('bg-blue-600', 'text-white'));
+  b.classList.add('bg-blue-600', 'text-white');
+  loadTV();
 });
-$('spreadToggle').onchange = (e) => {
-  chartXau.data.datasets[1].hidden = !e.target.checked;
-  chartXau.data.datasets[2].hidden = !e.target.checked;
-  chartXau.update('none');
-};
+loadTV();
+
 
 const chartGold = new Chart($('chartGold'), {
   type: 'line',
