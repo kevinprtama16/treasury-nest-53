@@ -196,7 +196,7 @@ const applyTheme = (dark) => {
   document.documentElement.classList.toggle('dark', dark);
   $('themeIcon').className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   localStorage.setItem('tsy_theme', dark ? 'dark' : 'light');
-  if (typeof loadTV === 'function') loadTV();
+  if (window.__tvReady) loadTV();
 };
 applyTheme(localStorage.getItem('tsy_theme') === 'dark');
 $('btnTheme').onclick = () => applyTheme(!document.documentElement.classList.contains('dark'));
@@ -293,6 +293,7 @@ document.querySelectorAll('[data-tvint]').forEach(b => b.onclick = () => {
   b.classList.add('bg-blue-600', 'text-white');
   loadTV();
 });
+window.__tvReady = true;
 loadTV();
 
 
