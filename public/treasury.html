@@ -324,10 +324,8 @@ function tick() {
   const prevUsd = M.usd;
   M.usd = Math.max(1, M.usd + (Math.random() - .5) * M.usd * 0.0005);
 
-  push(chartXau, 0, M.xau, N);
-  chartXau.data.datasets[1].data = chartXau.data.datasets[0].data.map(v => v + 0.6);
-  chartXau.data.datasets[2].data = chartXau.data.datasets[0].data.map(v => v - 0.6);
-  chartXau.update('none');
+
+
 
   const gds = chartGold.data.datasets[0];
   gds.data.push(M.gold); chartGold.data.labels.push(t());
